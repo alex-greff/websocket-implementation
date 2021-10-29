@@ -13,8 +13,10 @@
       "*": [
         "node_modules/*",
         "src/types/*"
-      ]
-    }
+      ],
+      "@/*": ["src/*"],
+    },
+    "strictNullChecks": true
   },
   "include": [
     "src/**/*"

@@ -14,7 +14,8 @@
       "*": ["node_modules/*"],
       "@/*": ["src/*"]
     },
-    "jsx": "react"
+    "jsx": "react",
+    "strictNullChecks": true
   },
   "include": [
     "src/**/*"
