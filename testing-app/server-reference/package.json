@@ -5,7 +5,8 @@
   "main": "src/app.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start:dev": "nodemon -r tsconfig-paths/register src/app.ts"
+    "start:dev-old": "nodemon -r tsconfig-paths/register src/app.ts",
+    "start:dev": "nodemon --watch \"./src/app.ts\" --exec \"npx ts-node -r tsconfig-paths/register src/app.ts\""
   },
   "author": "",
   "license": "ISC",

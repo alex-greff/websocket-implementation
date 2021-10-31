@@ -74,6 +74,8 @@ const onClientMessage = (messageRaw: RawData, ws: WebSocket) => {
   try {
     const message = WsReceivedMessage.fromJson(messageStr);
 
+    console.log("HERE 2");
+
     // Client connects to or creates a room
     if (message.type === "room-connect") {
       const roomConnectMsg = WsRoomConnect.fromJson(messageStr);
@@ -150,6 +152,8 @@ const onClientMessage = (messageRaw: RawData, ws: WebSocket) => {
 };
 
 const onConnection = (ws: WebSocket) => {
+  console.log("HERE 1");
+
   ws.on("message", (m) => onClientMessage(m, ws));
 
   // TODO: setup heartbeat?
