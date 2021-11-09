@@ -46,6 +46,7 @@
         [
           "@electron-forge/plugin-webpack",
           {
+            "devContentSecurityPolicy": "default-src * 'unsafe-eval' 'unsafe-inline'; connect-src 'self' ws://localhost:3051/;",
             "mainConfig": "./webpack.main.config.js",
             "renderer": {
               "config": "./webpack.renderer.config.js",
@@ -92,6 +93,7 @@
     "@emotion/react": "^11.5.0",
     "@emotion/styled": "^11.3.0",
     "@types/ws": "^8.2.0",
+    "bufferutil": "^4.0.5",
     "electron-squirrel-startup": "^1.0.0",
     "framer-motion": "^4.1.17",
     "react": "^17.0.2",
@@ -99,6 +101,7 @@
     "react-router-dom": "^5.3.0",
     "react-use": "^17.3.1",
     "sass": "^1.43.3",
+    "utf-8-validate": "^5.0.7",
     "ws": "^8.2.3"
   }
 }

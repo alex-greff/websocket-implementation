@@ -19,12 +19,5 @@ module.exports = {
       ".scss",
       ".sass",
     ],
-    // alias: {
-    //   "@": path.resolve(__dirname, './src'),
-    // },
   },
-  // resolve: {
-  //   a
-  //   extensions: ['.ts', '.tsx', ".js", ".jsx"],
-  // },
 };

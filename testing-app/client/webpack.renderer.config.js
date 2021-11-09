@@ -18,4 +18,5 @@ module.exports = {
       "@": path.resolve(__dirname, './src'),
     },
   },
+  target: "node",
 };
