@@ -1,3 +1,8 @@
 body {
   // background-color: red !important; // TODO: remove
 }
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+}
