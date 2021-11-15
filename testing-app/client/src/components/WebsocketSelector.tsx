@@ -17,7 +17,6 @@ import {
   WebsocketClientType,
   WebsocketServerType,
 } from "@/types";
-import { assert } from "tsafe";
 import { useMountedState } from "react-use";
 
 export type WebsocketSelectorOnConnect = (ws: WebsocketClient) => unknown;
@@ -114,7 +113,7 @@ export const WebsocketSelector: FunctionComponent<Props> = (props) => {
   return (
     <Flex direction="column" alignItems="center">
       <Text color="gray.700" fontWeight="semibold">
-        Select Websocket server and client to use.
+        Select Websocket server and client to use
       </Text>
 
       <Box height="2"></Box>
