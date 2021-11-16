@@ -16,7 +16,8 @@
       ],
       "@/*": ["src/*"],
     },
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    "experimentalDecorators": true
   },
   "include": [
     "src/**/*"

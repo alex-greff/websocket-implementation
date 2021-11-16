@@ -1,4 +1,8 @@
-import React, { FunctionComponent, useMemo, useState } from "react";
+import React, {
+  FunctionComponent,
+  useMemo,
+  useState,
+} from "react";
 import {
   Box,
   Button,
@@ -8,19 +12,40 @@ import {
   Heading,
   Input,
   Text,
+  useToast,
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import { WebsocketSelector } from "@/components/WebsocketSelector";
-import { WebsocketClient } from "@/types";
+import { ChatMessage, WebsocketClient } from "@/types";
+import { assert } from "tsafe";
+import WebSocket from "ws";
+import { useMountedState } from "react-use";
+import {
+  WsMembersChanged,
+  WsMessageError,
+  WsReceivedMessage,
+  WsReceiveMessage,
+  WsRoomConnect,
+  WsRoomConnected,
+  WsRoomLeave,
+  WsSendMessage,
+} from "@/models/chat.models";
+import { ChatDisplay } from "@/components/ChatDisplay";
 
-export const ChatView: FunctionComponent = (props) => {
+const DEFAULT_ROOM_ID = "";
+const DEFAULT_NAME = "";
+
+export const ChatView: FunctionComponent = () => {
+  const isMounted = useMountedState();
+  const toast = useToast();
+
   const [wsClient, setWsClient] = useState<WebsocketClient | null>(null);
   const isConnected = useMemo(() => wsClient !== null, [wsClient]);
 
-  const [roomId, setRoomId] = useState<string>("");
+  const [roomId, setRoomId] = useState<string>(DEFAULT_ROOM_ID);
   const isValidRoomId = useMemo(() => roomId.length > 0, [roomId]);
 
-  const [name, setName] = useState<string>("");
+  const [name, setName] = useState<string>(DEFAULT_NAME);
   const isValidName = useMemo(() => name.length > 0, [name]);
 
   const [isRoomConnected, setIsRoomConnected] = useState<boolean>(false);
@@ -31,12 +56,17 @@ export const ChatView: FunctionComponent = (props) => {
     [textMessageInput]
   );
 
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [members, setMembers] = useState<string[]>([]);
+
   const onWsConnect = (ws: WebsocketClient) => {
-    // TODO: do chat message setup
     setWsClient(() => ws);
   };
 
   const onWsDisconnect = () => {
+    if (isMounted()) {
+      roomDisconnect(false);
+    }
     setWsClient(() => null);
   };
 
@@ -48,9 +78,111 @@ export const ChatView: FunctionComponent = (props) => {
     setName(() => e.target.value);
   };
 
+  const onNewMessage = (message: string, name: string) => {
+    setMessages((messages) => {
+      const newMessages: ChatMessage[] = [
+        ...messages,
+        { message, sender: name },
+      ];
+      return newMessages;
+    });
+  };
+
+  const onRoomMessage = (messageRaw: WebSocket.RawData) => {
+    try {
+      const messageStr: string = messageRaw.toString();
+      const messageJson: any = JSON.parse(messageStr);
+
+      const receivedMessage = WsReceivedMessage.fromJson(messageJson);
+
+      if (receivedMessage.type == "room-connected") {
+        const roomConnectedMsg = WsRoomConnected.fromJson(messageJson);
+
+        toast({
+          title: "Room Connected",
+          description: `Successfully connected to room '${roomConnectedMsg.roomId}'`,
+          duration: 2000,
+          isClosable: true,
+          status: "success",
+        });
+
+        // Initialize message list to any chat messages that were sent
+        // before joining
+        setMessages(() => [...roomConnectedMsg.messages]);
+
+        // Initialize members list for the currently joined users
+        setMembers(() => [...roomConnectedMsg.members]);
+
+        setIsRoomConnected(() => true);
+      } else if (receivedMessage.type == "receive-message") {
+        const receiveMessageMsg = WsReceiveMessage.fromJson(messageJson);
+
+        // Update UI with message
+        onNewMessage(receiveMessageMsg.message, receiveMessageMsg.name);
+      } else if (receivedMessage.type == "members-changed") {
+        const membersChangedMsg = WsMembersChanged.fromJson(messageJson);
+
+        setMembers(() => [...membersChangedMsg.names]);
+      } else if (receivedMessage.type === "error") {
+        const errorMsg = WsMessageError.fromJson(messageJson);
+
+        toast({
+          title: "Error",
+          description: errorMsg.error,
+          duration: 2000,
+          isClosable: true,
+          status: "error",
+        });
+
+        // An error occurred while we were trying to connect to the room
+        // so clean up message listener
+        if (!isRoomConnected) {
+          assert(wsClient !== null);
+          // Note: see reasoning in roomDisconnect for why we do this instead of
+          // wsClient.off("message", ...)
+          wsClient.removeAllListeners("message");
+        }
+      }
+    } catch (err) {}
+  };
+
+  const roomJoin = () => {
+    assert(wsClient !== null);
+
+    // Setup message listener
+    wsClient.on("message", onRoomMessage);
+
+    // Send the join room message
+    const connectMessage = new WsRoomConnect(roomId, name);
+    wsClient.send(connectMessage.toJson());
+  };
+
+  const roomDisconnect = (sendLeaveMessage = true) => {
+    if (sendLeaveMessage) {
+      assert(wsClient !== null);
+
+      // Send the leave room message
+      const roomLeaveMsg = new WsRoomLeave();
+      wsClient.send(roomLeaveMsg.toJson());
+
+      // Note: we do not do wsClient.off("message", ...)
+      // because onRoomMessage changes with each rerender and fixing this
+      // with useCallback caused other issues. So since no other event listeners
+      // are on "message", we can just do this here
+      wsClient.removeAllListeners("message");
+    }
+
+    setIsRoomConnected(() => false);
+    setMessages(() => []); // clear messages
+    setMembers(() => []); // clear members
+  };
+
   const onRoomToggleJoin = () => {
-    // TODO: do chat message setup?
-    setIsRoomConnected(() => !isRoomConnected);
+    if (!isRoomConnected) {
+      roomJoin();
+    } else {
+      roomDisconnect();
+    }
   };
 
   const onTextMessageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -58,7 +190,17 @@ export const ChatView: FunctionComponent = (props) => {
   };
 
   const onSendTextMessage = () => {
-    // TODO: implement
+    assert(wsClient !== null && isValidTextMessageInput);
+
+    // Send the message
+    const sendMessage = new WsSendMessage(textMessageInput);
+    wsClient.send(sendMessage.toJson());
+
+    // Update UI with message
+    onNewMessage(sendMessage.message, name);
+
+    // Clear the input
+    setTextMessageInput("");
   };
 
   return (
@@ -95,11 +237,19 @@ export const ChatView: FunctionComponent = (props) => {
         <Box width="4"></Box>
 
         {/* Room join inputs */}
-        <Flex
-          direction="column"
-          alignItems="center"
-          width="100%"
-          maxWidth="20rem"
+        <form
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            width: "100%",
+            maxWidth: "20rem",
+          }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!isConnected || !isValidRoomId || !isValidName) return;
+            onRoomToggleJoin();
+          }}
         >
           <Text color="gray.700" fontWeight="semibold">
             Provide room and name information
@@ -131,22 +281,44 @@ export const ChatView: FunctionComponent = (props) => {
 
           <Button
             colorScheme={isRoomConnected ? "red" : "blue"}
-            onClick={onRoomToggleJoin}
+            type="submit"
             isDisabled={!isConnected || !isValidRoomId || !isValidName}
           >
             {isRoomConnected ? "Leave Room" : "Join / Create Room"}
           </Button>
-        </Flex>
+        </form>
       </Flex>
 
       <Box height="6"></Box>
 
-      <Text>TODO: show messages</Text>
-
-      <Box height="2"></Box>
+      {/* Display members and chat messages list */}
+      {isRoomConnected && (
+        <>
+          <Flex direction="column" maxWidth="20rem" width="100%">
+            <Text fontWeight="bold">Currently Connected:</Text>
+            <Box>{members.join(", ")}</Box>
+          </Flex>
+          <Box height="2"></Box>
+          <ChatDisplay messages={messages} selfName={name} />
+        </>
+      )}
 
       {/* Chat input */}
-      <Flex direction="row" justifyContent="space-between" paddingBottom="2">
+      <form
+        style={{
+          marginTop: "5px",
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "space-between",
+          paddingBottom: "0.5rem",
+        }}
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!isConnected || !isRoomConnected || !isValidTextMessageInput)
+            return;
+          onSendTextMessage();
+        }}
+      >
         <FormControl id="chat-message-input">
           <Input
             placeholder="Enter message..."
@@ -160,14 +332,14 @@ export const ChatView: FunctionComponent = (props) => {
 
         <Button
           colorScheme={"blue"}
-          onClick={onSendTextMessage}
           isDisabled={
             !isConnected || !isRoomConnected || !isValidTextMessageInput
           }
+          type="submit"
         >
           Send
         </Button>
-      </Flex>
+      </form>
     </Flex>
   );
 };

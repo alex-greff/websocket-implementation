@@ -111,7 +111,17 @@ export const WebsocketSelector: FunctionComponent<Props> = (props) => {
   }, [wsClient]);
 
   return (
-    <Flex direction="column" alignItems="center">
+    <form
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+      }}
+      onSubmit={(e) => {
+        e.preventDefault();
+        onClickToggleConnect();
+      }}
+    >
       <Text color="gray.700" fontWeight="semibold">
         Select Websocket server and client to use
       </Text>
@@ -156,10 +166,10 @@ export const WebsocketSelector: FunctionComponent<Props> = (props) => {
         colorScheme={connected ? "red" : "green"}
         maxWidth="10rem"
         width="100%"
-        onClick={onClickToggleConnect}
+        type="submit"
       >
         {connected ? "Disconnect" : "Connect"}
       </Button>
-    </Flex>
+    </form>
   );
 };
