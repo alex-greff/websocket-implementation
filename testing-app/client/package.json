@@ -5,9 +5,12 @@
   "description": "My Electron application description",
   "main": ".webpack/main",
   "scripts": {
-    "start:dev": "electron-forge start",
-    "package": "electron-forge package",
-    "make": "electron-forge make",
+    "start:dev": "cross-env ELECTRON_ENV=dev ELECTRON_NUM_WINDOWS=1 electron-forge start",
+    "start:dev-2": "cross-env ELECTRON_ENV=dev ELECTRON_NUM_WINDOWS=2 electron-forge start",
+    "start:dev-3": "cross-env ELECTRON_ENV=dev ELECTRON_NUM_WINDOWS=3 electron-forge start",
+    "start:dev-4": "cross-env ELECTRON_ENV=dev ELECTRON_NUM_WINDOWS=4 electron-forge start",
+    "package": "cross-env ELECTRON_ENV=production electron-forge package",
+    "make": "cross-env ELECTRON_ENV=production electron-forge make",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx ."
   },
@@ -55,6 +58,11 @@
                   "html": "./src/index.html",
                   "js": "./src/renderer.ts",
                   "name": "main_window"
+                },
+                {
+                  "html": "./src/index.html",
+                  "js": "./src/renderer.ts",
+                  "name": "second_window"
                 }
               ]
             }
