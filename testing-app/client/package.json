@@ -12,7 +12,8 @@
     "package": "cross-env ELECTRON_ENV=production electron-forge package",
     "make": "cross-env ELECTRON_ENV=production electron-forge make",
     "publish": "electron-forge publish",
-    "lint": "eslint --ext .ts,.tsx ."
+    "lint": "eslint --ext .ts,.tsx .",
+    "link:ws-client": "npm link d58-websocket-client"
   },
   "keywords": [],
   "author": {

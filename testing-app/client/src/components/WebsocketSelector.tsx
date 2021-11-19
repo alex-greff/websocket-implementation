@@ -18,6 +18,8 @@ import {
   WebsocketServerType,
 } from "@/types";
 import { useMountedState } from "react-use";
+// TODO: update
+import { WebSocketClient as D58WebSocketClient } from "d58-websocket-client";
 
 export type WebsocketSelectorOnConnect = (ws: WebsocketClient) => unknown;
 export type WebsocketSelectorOnDisconnect = () => unknown;
@@ -76,6 +78,8 @@ export const WebsocketSelector: FunctionComponent<Props> = (props) => {
     if (!connected) {
       // TODO: add support for implemented client
       const ws = new WebSocket(serverUrl);
+
+      const wsD58 = new D58WebSocketClient(serverUrl);
 
       ws.on("open", () => {
         onWsConnect(ws);

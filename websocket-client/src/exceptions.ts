@@ -1,0 +1,1 @@
+export class InvalidWebSocketURLError extends Error {}
