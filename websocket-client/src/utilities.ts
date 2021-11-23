@@ -44,9 +44,37 @@ export function intToBool(valInt: number): boolean {
  * @param byteNum The byte index number to extract.
  */
 export function intGetByteAt(intVal: number, byteNum: number) {
+  assert(byteNum >= 0 && byteNum <= 3);
+
   const shift: number = 8 * byteNum;
-  const mask: number = 255 << shift;
-  const byteVal = (intVal & mask) >> shift;
+  // >>> is to convert back to an unsigned int
+  // Source: https://stackoverflow.com/a/54030756
+  const mask: number = 255 << shift >>> 0;
+  // We also want to do an unsigned right bit shift here too
+  const byteVal = (intVal & mask) >>> shift;
 
   return byteVal;
+}
+
+/**
+ * Returns if the given value is "stringifiable"
+ * (i.e. has the toString function).
+ */
+export function isStringifiable(value: any): boolean {
+  return (typeof(value["toString"]) === "function");
+}
+
+/**
+ * Returns if the given value is a valid buffer.
+ */
+export function isBuffer(value: any): boolean {
+  return Buffer.isBuffer(value);
+}
+
+// Source: https://stackoverflow.com/a/16155417
+/**
+ * Prints the binary representation of the given decimal number.
+ */
+export function dec2bin(dec: number): string {
+  return (dec >>> 0).toString(2);
 }

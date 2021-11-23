@@ -3,7 +3,7 @@ import { assert } from "tsafe";
 import { WebSocketFrameError } from "./exceptions";
 import * as Utilities from "./utilities";
 
-enum WebSocketFrameOpcode {
+export enum WebSocketFrameOpcode {
   continuation = 0x0,
   text = 0x1,
   binary = 0x2,
@@ -47,12 +47,13 @@ const BITS_OFFSET_OPCODE = BITS_LEN_RSV + BITS_OFFSET_RSV;
 const BITS_OFFSET_MASK = BITS_OFFSET_OPCODE + BITS_LEN_OPCODE;
 const BITS_OFFSET_PAYLOAD = BITS_OFFSET_MASK + BITS_LEN_MASK;
 
-interface WebSocketFrameValues {
+export interface WebSocketFrameValues {
   fin: boolean;
-  opcode: number;
+  opcode: WebSocketFrameOpcode;
   mask: boolean;
   payloadBytesLen: number;
-  maskingKey?: number;
+  // maskingKey?: number; // TODO: remove
+  maskingBytes?: Buffer;
   payloadData?: Buffer;
 }
 
@@ -64,7 +65,8 @@ export class WebSocketFrame {
   private opcode: number;
   private mask: boolean;
   private payloadBytesLen: number;
-  private maskingKey?: number;
+  // private maskingKey?: number; // TODO: remove
+  private maskingBytes?: Buffer;
   private payloadData?: Buffer;
 
   constructor(values: WebSocketFrameValues) {
@@ -74,7 +76,8 @@ export class WebSocketFrame {
     this.opcode = values.opcode;
     this.mask = values.mask;
     this.payloadBytesLen = values.payloadBytesLen;
-    this.maskingKey = values.maskingKey;
+    // this.maskingKey = values.maskingKey; // TODO: remove
+    this.maskingBytes = values.maskingBytes;
     this.payloadData = values.payloadData;
   }
 
@@ -128,19 +131,27 @@ export class WebSocketFrame {
 
   static applyMaskToBuffer(
     buffer: Buffer,
-    maskingKey: number,
+    maskBytes: Buffer,
+    // maskingKey: number, // TODO: remove
     startOffset: number = 0,
     length?: number
   ) {
+    assert(maskBytes.length === 4);
+    // TODO: remove
+    // const maskBytes = Buffer.allocUnsafe(4);
+    // maskBytes.writeUInt32LE(maskingKey);
+
     // Reference: https://datatracker.ietf.org/doc/html/rfc6455#section-5.3
 
     if (!length) length = buffer.length;
 
     // Mask each byte in the payload
     for (let i = startOffset; i < startOffset + length; i++) {
-      const j = i % 4;
-      buffer[i] =
-        buffer[i] ^ Utilities.intGetByteAt(maskingKey, j);
+      // const j = i & 3; // equivalent to: i % 4
+      const j = i % 4; // TODO: remove
+      // Alternatively can do
+      // buffer[i] = buffer[i] ^ Utilities.intGetByteAt(maskingKey, j);
+      buffer[i] = buffer[i] ^ maskBytes[j];
     }
   }
 
@@ -151,6 +162,7 @@ export class WebSocketFrame {
       throw new WebSocketFrameError("Buffer length too small");
 
     const bitBuffer = new BitView(buffer);
+    bitBuffer.bigEndian = true;
     let bufferRemainingBits = buffer.length * 8;
 
     const fin = Utilities.intToBool(
@@ -207,16 +219,27 @@ export class WebSocketFrame {
       bufferRemainingBits -= payloadAdditionalBitsLength;
     }
 
-    let maskingKey: number | undefined = undefined;
+    // let maskingKey: number | undefined = undefined; // TODO: remove
+    let maskingBytes: Buffer | undefined = undefined;
     if (mask) {
       if (bufferRemainingBits < BITS_LEN_MASKING_KEY)
         throw new WebSocketFrameError("Buffer length too small");
-      maskingKey = bitBuffer.getBits(
-        BITS_OFFSET_PAYLOAD +
+      // TODO: remove
+      // maskingKey = bitBuffer.getBits(
+      //   BITS_OFFSET_PAYLOAD +
+      //     PayloadLenLevelBits.LEVEL0 +
+      //     payloadAdditionalBitsLength,
+      //   BITS_LEN_MASKING_KEY,
+      //   false
+      // );
+      maskingBytes = Buffer.allocUnsafe(4);
+      bitBuffer.buffer.copy(
+        maskingBytes,
+        (BITS_OFFSET_PAYLOAD +
           PayloadLenLevelBits.LEVEL0 +
-          payloadAdditionalBitsLength,
-        BITS_LEN_MASKING_KEY,
-        false
+          payloadAdditionalBitsLength) /
+          8,
+        BITS_LEN_MASKING_KEY / 8
       );
       bufferRemainingBits -= BITS_LEN_MASKING_KEY;
     }
@@ -246,18 +269,30 @@ export class WebSocketFrame {
 
       // Unmask the payload, if it is masked
       if (mask) {
-        assert(maskingKey !== undefined);
+        // TODO: remove
+        // assert(maskingKey !== undefined);
+        // WebSocketFrame.applyMaskToBuffer(payloadData, maskingKey);
 
-        WebSocketFrame.applyMaskToBuffer(payloadData, maskingKey);
+        assert(maskingBytes !== undefined);
+        WebSocketFrame.applyMaskToBuffer(payloadData, maskingBytes);
       }
     }
 
+    // TODO: remove
+    // return new WebSocketFrame({
+    //   fin,
+    //   mask,
+    //   opcode,
+    //   payloadBytesLen,
+    //   maskingKey,
+    //   payloadData,
+    // });
     return new WebSocketFrame({
       fin,
       mask,
       opcode,
       payloadBytesLen,
-      maskingKey,
+      maskingBytes,
       payloadData,
     });
   }
@@ -265,6 +300,7 @@ export class WebSocketFrame {
   public toBuffer(): Buffer {
     const buffer = Buffer.alloc(this.frameBitsLength / 8);
     const bitBuffer = new BitView(buffer);
+    bitBuffer.bigEndian = true;
 
     bitBuffer.setBits(
       BITS_OFFSET_FIN,
@@ -304,19 +340,37 @@ export class WebSocketFrame {
 
     // Set masking key bits, if needed
     if (this.mask) {
-      assert(this.maskingKey);
-      bitBuffer.setBits(
-        this.maskingKeyBitsOffset,
-        this.maskingKey,
-        this.maskingKeyBitsLength
-      );
+      // TODO: remove
+      // assert(this.maskingKey);
+      // bitBuffer.setBits(
+      //   this.maskingKeyBitsOffset,
+      //   this.maskingKey,
+      //   this.maskingKeyBitsLength
+      // );
+
+      assert(this.maskingBytes);
+      // TODO: remove
+      // this.maskingBytes.copy(bitBuffer.buffer, this.maskingKeyBitsOffset / 8);
+      // bitBuffer.buffer.writeUInt32LE(25245242, this.maskingKeyBitsOffset / 8);
+
+      // TODO: this has to be some endianness stuff, figure it out
+      const startIdx = this.maskingKeyBitsOffset / 8;
+      bitBuffer.buffer[startIdx] = this.maskingBytes[2];
+      bitBuffer.buffer[startIdx + 1] = this.maskingBytes[3];
+      bitBuffer.buffer[startIdx + 2] = this.maskingBytes[0];
+      bitBuffer.buffer[startIdx + 3] = this.maskingBytes[1];
+
+      // // TODO: remove
+      // const temp = bitBuffer.buffer.readUInt32BE(this.maskingKeyBitsOffset / 8);
+      // console.log(`$>> this.maskingKey = ${this.maskingKey}, maskKeyB = ${temp}`);
     }
 
     // Set payload bytes, if needed
     if (this.payloadData) {
       assert(this.payloadData.length === this.payloadBytesLen);
 
-      const bitBufferPayloadStart = this.frameBitsLength / 8 - this.payloadBytesLen;
+      const bitBufferPayloadStart =
+        this.frameBitsLength / 8 - this.payloadBytesLen;
 
       this.payloadData.copy(
         bitBuffer.buffer,
@@ -325,17 +379,47 @@ export class WebSocketFrame {
         this.payloadBytesLen
       );
 
+      // TODO: remove
+      console.log("bitBufferPayloadStart = " + bitBufferPayloadStart);
+      console.log("payloadData (unmasked):");
+      console.log(this.payloadData);
+
       // Mask the bytes in the bit buffer that are for the payload, if needed
       if (this.mask) {
-        assert(this.maskingKey);
+        // TODO: remove
+        // assert(this.maskingKey);
+        // WebSocketFrame.applyMaskToBuffer(
+        //   bitBuffer.buffer,
+        //   this.maskingKey,
+        //   bitBufferPayloadStart,
+        //   this.payloadBytesLen
+        // );
+
+        assert(this.maskingBytes);
         WebSocketFrame.applyMaskToBuffer(
           bitBuffer.buffer,
-          this.maskingKey,
+          this.maskingBytes,
           bitBufferPayloadStart,
-          this.payloadBytesLen,
+          this.payloadBytesLen
         );
+
+
+        // TODO: remove
+        const payloadMasked = Buffer.alloc(this.payloadBytesLen);
+        bitBuffer.buffer.copy(
+          payloadMasked,
+          0,
+          bitBufferPayloadStart,
+          bitBufferPayloadStart + this.payloadBytesLen
+        );
+        console.log("payloadData (masked):");
+        console.log(payloadMasked);
       }
     }
+
+    // TODO: remove
+    console.log("bitBuffer.buffer");
+    console.log(bitBuffer.buffer);
 
     return bitBuffer.buffer;
   }

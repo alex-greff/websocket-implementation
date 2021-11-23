@@ -10,6 +10,7 @@ import crypto from "crypto";
 import * as Utilities from "./utilities";
 import { Socket } from "net";
 import { assert } from "tsafe";
+import { WebSocketFrame, WebSocketFrameOpcode } from "./frame";
 
 type WebSocketProtocol = "ws";
 
@@ -61,6 +62,10 @@ export class WebSocketClient extends EventEmitter {
     this.socket = undefined;
 
     this.startConnection();
+  }
+
+  private generateMaskingKey(): number {
+    return crypto.randomBytes(4).readUInt32BE();
   }
 
   private parseAndValidateUrl(urlStr: string): URL | never {
@@ -188,6 +193,7 @@ export class WebSocketClient extends EventEmitter {
     console.log("> socket close");
     this.emit(WebSocketClientEvents.close);
   }
+  
 
   public ping() {
     // TODO: implement
@@ -197,8 +203,52 @@ export class WebSocketClient extends EventEmitter {
     // TODO: implement
   }
 
-  public send(data?: any) {
-    // TODO: implement
+  public send(data: any) {
+    assert(this.state === "open");
+
+    if (Utilities.isBuffer(data)) 
+      this.sendBuffer(data);
+    else if (Utilities.isStringifiable(data))
+      this.sendUTF8String(data.toString());
+    else
+      throw new WebSocketError("Data type must be a buffer or implement toString");
+  }
+
+  private sendBuffer(buffer: Buffer) {
+    this.sendFrame(buffer, WebSocketFrameOpcode.binary);
+  }
+
+  private sendUTF8String(str: string) {
+    const buffer = Buffer.from(str, "utf-8");
+    this.sendFrame(buffer, WebSocketFrameOpcode.text);
+  }
+
+  private sendFrame(payloadData: Buffer, opcode: WebSocketFrameOpcode) {
+    // Outgoing frames from client must always be masked
+    const maskingKey = this.generateMaskingKey();
+
+    const maskingBytes = Buffer.allocUnsafe(4);
+    maskingBytes.writeUInt32BE(maskingKey);
+
+    // TODO: remove
+    console.log("maskingKey: " + Utilities.dec2bin(maskingKey));
+
+    const frame = new WebSocketFrame({
+      fin: true,
+      mask: true,
+      // maskingKey, // TODO: remove
+      maskingBytes,
+      opcode,
+      payloadBytesLen: payloadData.length,
+      payloadData,
+    });
+
+    // TODO: remove
+    console.log(">> SENDING FRAME");
+
+    // Send the frame
+    assert(this.socket);
+    this.socket.write(frame.toBuffer());
   }
 
   public close(code?: number, data?: string | Buffer): void {

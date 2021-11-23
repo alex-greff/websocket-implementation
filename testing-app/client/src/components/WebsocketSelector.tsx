@@ -80,6 +80,11 @@ export const WebsocketSelector: FunctionComponent<Props> = (props) => {
       const ws = new WebSocket(serverUrl);
 
       const wsD58 = new D58WebSocketClient(serverUrl);
+      
+      wsD58.on("open", () => {
+        console.log("wsD58: open");
+        wsD58.send(Buffer.from("Hellooooooo", "utf-8"));
+      });
 
       ws.on("open", () => {
         onWsConnect(ws);
