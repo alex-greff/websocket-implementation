@@ -1,4 +1,7 @@
 // Source: https://stackoverflow.com/a/2140723
+
+import { assert } from "tsafe";
+
 /**
  * Performs ASCII case-insensitive equality comparison between the two strings.
  * @param a String A
@@ -33,4 +36,17 @@ export function boolToInt(valBool: boolean): number {
  */
 export function intToBool(valInt: number): boolean {
   return Boolean(valInt);
+}
+
+/**
+ * Gets the value of the byteNum'th byte in the given integer.
+ * @param intVal The integer value to extract from.
+ * @param byteNum The byte index number to extract.
+ */
+export function intGetByteAt(intVal: number, byteNum: number) {
+  const shift: number = 8 * byteNum;
+  const mask: number = 255 << shift;
+  const byteVal = (intVal & mask) >> shift;
+
+  return byteVal;
 }

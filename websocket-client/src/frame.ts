@@ -126,6 +126,24 @@ export class WebSocketFrame {
     );
   }
 
+  static applyMaskToBuffer(
+    buffer: Buffer,
+    maskingKey: number,
+    startOffset: number = 0,
+    length?: number
+  ) {
+    // Reference: https://datatracker.ietf.org/doc/html/rfc6455#section-5.3
+
+    if (!length) length = buffer.length;
+
+    // Mask each byte in the payload
+    for (let i = startOffset; i < startOffset + length; i++) {
+      const j = i % 4;
+      buffer[i] =
+        buffer[i] ^ Utilities.intGetByteAt(maskingKey, j);
+    }
+  }
+
   static fromBuffer(buffer: Buffer): WebSocketFrame {
     // Ensure that at least everything upto and including
     // Payload len (7) is there
@@ -218,6 +236,7 @@ export class WebSocketFrame {
           BITS_LEN_MASKING_KEY) /
         8;
 
+      // Copy payload in bitBuffer to payloadData
       bitBuffer.buffer.copy(
         payloadData,
         0,
@@ -225,7 +244,12 @@ export class WebSocketFrame {
         payloadStartByte + payloadBytesLen
       );
 
-      // TODO: do unmasking of payload
+      // Unmask the payload, if it is masked
+      if (mask) {
+        assert(maskingKey !== undefined);
+
+        WebSocketFrame.applyMaskToBuffer(payloadData, maskingKey);
+      }
     }
 
     return new WebSocketFrame({
@@ -291,14 +315,26 @@ export class WebSocketFrame {
     // Set payload bytes, if needed
     if (this.payloadData) {
       assert(this.payloadData.length === this.payloadBytesLen);
+
+      const bitBufferPayloadStart = this.frameBitsLength / 8 - this.payloadBytesLen;
+
       this.payloadData.copy(
         bitBuffer.buffer,
-        this.frameBitsLength / 8 - this.payloadBytesLen,
+        bitBufferPayloadStart,
         0,
         this.payloadBytesLen
       );
 
-      // TODO: do masking of payload
+      // Mask the bytes in the bit buffer that are for the payload, if needed
+      if (this.mask) {
+        assert(this.maskingKey);
+        WebSocketFrame.applyMaskToBuffer(
+          bitBuffer.buffer,
+          this.maskingKey,
+          bitBufferPayloadStart,
+          this.payloadBytesLen,
+        );
+      }
     }
 
     return bitBuffer.buffer;
