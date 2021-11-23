@@ -1,7 +1,9 @@
-from WebSocketServer import WebSocketServer
+from WebSocketServer import WebSocketConnection, WebSocketServer
 
-def connectionHandler(ws):
-    pass
+def connectionHandler(ws: WebSocketConnection):
+    ws.onMessage(onMessage)
 
-wss = WebSocketServer(8080)
-wss.onConnection(connectionHandler)
+def onMessage(text):
+    print(text)
+
+wss = WebSocketServer(3051, connectionHandler)
