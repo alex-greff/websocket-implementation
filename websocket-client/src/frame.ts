@@ -52,8 +52,7 @@ export interface WebSocketFrameValues {
   opcode: WebSocketFrameOpcode;
   mask: boolean;
   payloadBytesLen: number;
-  // maskingKey?: number; // TODO: remove
-  maskingBytes?: Buffer;
+  maskingKey?: number;
   payloadData?: Buffer;
 }
 
@@ -65,8 +64,7 @@ export class WebSocketFrame {
   private opcode: number;
   private mask: boolean;
   private payloadBytesLen: number;
-  // private maskingKey?: number; // TODO: remove
-  private maskingBytes?: Buffer;
+  private maskingKey?: number;
   private payloadData?: Buffer;
 
   constructor(values: WebSocketFrameValues) {
@@ -76,8 +74,7 @@ export class WebSocketFrame {
     this.opcode = values.opcode;
     this.mask = values.mask;
     this.payloadBytesLen = values.payloadBytesLen;
-    // this.maskingKey = values.maskingKey; // TODO: remove
-    this.maskingBytes = values.maskingBytes;
+    this.maskingKey = values.maskingKey;
     this.payloadData = values.payloadData;
   }
 
@@ -131,15 +128,12 @@ export class WebSocketFrame {
 
   static applyMaskToBuffer(
     buffer: Buffer,
-    maskBytes: Buffer,
-    // maskingKey: number, // TODO: remove
+    maskingKey: number, 
     startOffset: number = 0,
     length?: number
   ) {
-    assert(maskBytes.length === 4);
-    // TODO: remove
-    // const maskBytes = Buffer.allocUnsafe(4);
-    // maskBytes.writeUInt32LE(maskingKey);
+    const maskBytesN = Buffer.allocUnsafe(4);
+    maskBytesN.writeUInt32BE(maskingKey);
 
     // Reference: https://datatracker.ietf.org/doc/html/rfc6455#section-5.3
 
@@ -147,11 +141,10 @@ export class WebSocketFrame {
 
     // Mask each byte in the payload
     for (let i = startOffset; i < startOffset + length; i++) {
-      // const j = i & 3; // equivalent to: i % 4
-      const j = i % 4; // TODO: remove
-      // Alternatively can do
+      const j = i & 3; // equivalent to: i % 4
+      // Alternatively can do something like
       // buffer[i] = buffer[i] ^ Utilities.intGetByteAt(maskingKey, j);
-      buffer[i] = buffer[i] ^ maskBytes[j];
+      buffer[i] = buffer[i] ^ maskBytesN[j];
     }
   }
 
@@ -219,27 +212,17 @@ export class WebSocketFrame {
       bufferRemainingBits -= payloadAdditionalBitsLength;
     }
 
-    // let maskingKey: number | undefined = undefined; // TODO: remove
-    let maskingBytes: Buffer | undefined = undefined;
+    let maskingKey: number | undefined = undefined;
     if (mask) {
       if (bufferRemainingBits < BITS_LEN_MASKING_KEY)
         throw new WebSocketFrameError("Buffer length too small");
-      // TODO: remove
-      // maskingKey = bitBuffer.getBits(
-      //   BITS_OFFSET_PAYLOAD +
-      //     PayloadLenLevelBits.LEVEL0 +
-      //     payloadAdditionalBitsLength,
-      //   BITS_LEN_MASKING_KEY,
-      //   false
-      // );
-      maskingBytes = Buffer.allocUnsafe(4);
-      bitBuffer.buffer.copy(
-        maskingBytes,
-        (BITS_OFFSET_PAYLOAD +
+      
+      maskingKey = bitBuffer.getBits(
+        BITS_OFFSET_PAYLOAD +
           PayloadLenLevelBits.LEVEL0 +
-          payloadAdditionalBitsLength) /
-          8,
-        BITS_LEN_MASKING_KEY / 8
+          payloadAdditionalBitsLength,
+        BITS_LEN_MASKING_KEY,
+        false
       );
       bufferRemainingBits -= BITS_LEN_MASKING_KEY;
     }
@@ -269,30 +252,17 @@ export class WebSocketFrame {
 
       // Unmask the payload, if it is masked
       if (mask) {
-        // TODO: remove
-        // assert(maskingKey !== undefined);
-        // WebSocketFrame.applyMaskToBuffer(payloadData, maskingKey);
-
-        assert(maskingBytes !== undefined);
-        WebSocketFrame.applyMaskToBuffer(payloadData, maskingBytes);
+        assert(maskingKey !== undefined);
+        WebSocketFrame.applyMaskToBuffer(payloadData, maskingKey);
       }
     }
 
-    // TODO: remove
-    // return new WebSocketFrame({
-    //   fin,
-    //   mask,
-    //   opcode,
-    //   payloadBytesLen,
-    //   maskingKey,
-    //   payloadData,
-    // });
     return new WebSocketFrame({
       fin,
       mask,
       opcode,
       payloadBytesLen,
-      maskingBytes,
+      maskingKey,
       payloadData,
     });
   }
@@ -324,6 +294,7 @@ export class WebSocketFrame {
       );
     } else if (this.payloadLenLevel === PayloadLenLevel.LEVEL1) {
       bitBuffer.setBits(BITS_OFFSET_PAYLOAD, 126, PayloadLenLevelBits.LEVEL0);
+      // TODO: these are not in network byte order???
       bitBuffer.setBits(
         BITS_OFFSET_PAYLOAD + PayloadLenLevelBits.LEVEL0,
         this.payloadBytesLen,
@@ -331,6 +302,7 @@ export class WebSocketFrame {
       );
     } else if (this.payloadLenLevel === PayloadLenLevel.LEVEL2) {
       bitBuffer.setBits(BITS_OFFSET_PAYLOAD, 127, PayloadLenLevelBits.LEVEL0);
+      // TODO: these are not in network byte order???
       bitBuffer.setBits(
         BITS_OFFSET_PAYLOAD + PayloadLenLevelBits.LEVEL0,
         this.payloadBytesLen,
@@ -340,29 +312,17 @@ export class WebSocketFrame {
 
     // Set masking key bits, if needed
     if (this.mask) {
-      // TODO: remove
-      // assert(this.maskingKey);
-      // bitBuffer.setBits(
-      //   this.maskingKeyBitsOffset,
-      //   this.maskingKey,
-      //   this.maskingKeyBitsLength
-      // );
+      assert(this.maskingKey);
 
-      assert(this.maskingBytes);
-      // TODO: remove
-      // this.maskingBytes.copy(bitBuffer.buffer, this.maskingKeyBitsOffset / 8);
-      // bitBuffer.buffer.writeUInt32LE(25245242, this.maskingKeyBitsOffset / 8);
-
+      const maskingBytesN = Buffer.allocUnsafe(4);
+      maskingBytesN.writeUInt32BE(this.maskingKey);
+      // maskingBytesN.copy(bitBuffer.buffer, this.maskingKeyBitsOffset / 8);
       // TODO: this has to be some endianness stuff, figure it out
       const startIdx = this.maskingKeyBitsOffset / 8;
-      bitBuffer.buffer[startIdx] = this.maskingBytes[2];
-      bitBuffer.buffer[startIdx + 1] = this.maskingBytes[3];
-      bitBuffer.buffer[startIdx + 2] = this.maskingBytes[0];
-      bitBuffer.buffer[startIdx + 3] = this.maskingBytes[1];
-
-      // // TODO: remove
-      // const temp = bitBuffer.buffer.readUInt32BE(this.maskingKeyBitsOffset / 8);
-      // console.log(`$>> this.maskingKey = ${this.maskingKey}, maskKeyB = ${temp}`);
+      bitBuffer.buffer[startIdx] = maskingBytesN[2];
+      bitBuffer.buffer[startIdx + 1] = maskingBytesN[3];
+      bitBuffer.buffer[startIdx + 2] = maskingBytesN[0];
+      bitBuffer.buffer[startIdx + 3] = maskingBytesN[1];
     }
 
     // Set payload bytes, if needed
@@ -380,46 +340,37 @@ export class WebSocketFrame {
       );
 
       // TODO: remove
-      console.log("bitBufferPayloadStart = " + bitBufferPayloadStart);
-      console.log("payloadData (unmasked):");
-      console.log(this.payloadData);
+      // console.log("bitBufferPayloadStart = " + bitBufferPayloadStart);
+      // console.log("payloadData (unmasked):");
+      // console.log(this.payloadData);
 
       // Mask the bytes in the bit buffer that are for the payload, if needed
       if (this.mask) {
-        // TODO: remove
-        // assert(this.maskingKey);
-        // WebSocketFrame.applyMaskToBuffer(
-        //   bitBuffer.buffer,
-        //   this.maskingKey,
-        //   bitBufferPayloadStart,
-        //   this.payloadBytesLen
-        // );
-
-        assert(this.maskingBytes);
+        
+        assert(this.maskingKey);
         WebSocketFrame.applyMaskToBuffer(
           bitBuffer.buffer,
-          this.maskingBytes,
+          this.maskingKey,
           bitBufferPayloadStart,
           this.payloadBytesLen
         );
 
-
         // TODO: remove
-        const payloadMasked = Buffer.alloc(this.payloadBytesLen);
-        bitBuffer.buffer.copy(
-          payloadMasked,
-          0,
-          bitBufferPayloadStart,
-          bitBufferPayloadStart + this.payloadBytesLen
-        );
-        console.log("payloadData (masked):");
-        console.log(payloadMasked);
+        // const payloadMasked = Buffer.alloc(this.payloadBytesLen);
+        // bitBuffer.buffer.copy(
+        //   payloadMasked,
+        //   0,
+        //   bitBufferPayloadStart,
+        //   bitBufferPayloadStart + this.payloadBytesLen
+        // );
+        // console.log("payloadData (masked):");
+        // console.log(payloadMasked);
       }
     }
 
     // TODO: remove
-    console.log("bitBuffer.buffer");
-    console.log(bitBuffer.buffer);
+    // console.log("bitBuffer.buffer");
+    // console.log(bitBuffer.buffer);
 
     return bitBuffer.buffer;
   }

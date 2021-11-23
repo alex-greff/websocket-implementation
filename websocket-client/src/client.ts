@@ -227,17 +227,13 @@ export class WebSocketClient extends EventEmitter {
     // Outgoing frames from client must always be masked
     const maskingKey = this.generateMaskingKey();
 
-    const maskingBytes = Buffer.allocUnsafe(4);
-    maskingBytes.writeUInt32BE(maskingKey);
-
     // TODO: remove
     console.log("maskingKey: " + Utilities.dec2bin(maskingKey));
 
     const frame = new WebSocketFrame({
       fin: true,
       mask: true,
-      // maskingKey, // TODO: remove
-      maskingBytes,
+      maskingKey, 
       opcode,
       payloadBytesLen: payloadData.length,
       payloadData,
