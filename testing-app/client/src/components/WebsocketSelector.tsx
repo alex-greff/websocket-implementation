@@ -11,16 +11,14 @@ import {
   Text,
   useToast,
 } from "@chakra-ui/react";
-import WebSocketReference from "ws";
 import {
   WebsocketClient,
   WebsocketClientType,
   WebsocketServerType,
 } from "@/types";
 import { useMountedState } from "react-use";
-// TODO: update
-import { WebSocketClient as D58WebSocketClient } from "d58-websocket-client";
-
+import { WebSocket as WebSocketClientReference } from "ws";
+import { WebSocketClient as WebSocketClientD58 } from "d58-websocket-client";
 
 export type WebsocketSelectorOnConnect = (ws: WebsocketClient) => unknown;
 export type WebsocketSelectorOnDisconnect = () => unknown;
@@ -77,8 +75,10 @@ export const WebsocketSelector: FunctionComponent<Props> = (props) => {
 
     // Connect to new websocket client
     if (!connected) {
-      const ws = (selectedClient === "reference-client") ?
-        new WebSocketReference(serverUrl) : new D58WebSocketClient(serverUrl);
+      const ws =
+        selectedClient === "reference-client"
+          ? new WebSocketClientReference(serverUrl)
+          : new WebSocketClientD58(serverUrl);
 
       ws.on("open", () => {
         onWsConnect(ws);

@@ -91,6 +91,7 @@ export const ChatView: FunctionComponent = () => {
   const onRoomMessage = (messageRaw: WebSocket.RawData) => {
     try {
       const messageStr: string = messageRaw.toString();
+
       const messageJson: any = JSON.parse(messageStr);
 
       const receivedMessage = WsReceivedMessage.fromJson(messageJson);
@@ -143,7 +144,9 @@ export const ChatView: FunctionComponent = () => {
           wsClient.removeAllListeners("message");
         }
       }
-    } catch (err) {}
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const roomJoin = () => {

@@ -274,15 +274,18 @@ export class WebSocketFrame {
     }
 
     let maskingKey: number | undefined = undefined;
+    let maskingKeyBytes = 0;
     if (mask) {
       if (bufferRemainingBits < BITS_LEN_MASKING_KEY)
         throw new WebSocketFrameError("Buffer length too small");
+
+      maskingKeyBytes = BITS_LEN_MASKING_KEY;
 
       maskingKey = bitBuffer.getBits(
         BITS_OFFSET_PAYLOAD +
           PayloadLenLevelBits.LEVEL0 +
           payloadAdditionalBitsLength,
-        BITS_LEN_MASKING_KEY,
+          maskingKeyBytes,
         false
       );
       bufferRemainingBits -= BITS_LEN_MASKING_KEY;
@@ -321,7 +324,7 @@ export class WebSocketFrame {
         (BITS_OFFSET_PAYLOAD +
           PayloadLenLevelBits.LEVEL0 +
           payloadAdditionalBitsLength +
-          BITS_LEN_MASKING_KEY +
+          maskingKeyBytes +
           closeReasonBytes) /
         8;
 
@@ -339,7 +342,7 @@ export class WebSocketFrame {
         WebSocketFrame.applyMaskToBuffer(payloadData, maskingKey);
       }
     }
-
+    
     return new WebSocketFrame({
       fin,
       mask,

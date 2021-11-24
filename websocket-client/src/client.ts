@@ -84,8 +84,6 @@ export class WebSocketClient extends EventEmitter {
 
     if (url.port.length == 0) url.port = DEFAULT_PORTS[url.protocol].toString();
 
-    // console.log(url); // TODO: remove
-
     return url;
   }
 
@@ -218,8 +216,8 @@ export class WebSocketClient extends EventEmitter {
 
   private onSocketData(data: Buffer) {
     // TODO: remove
-    console.log("> socket data");
-    console.log(data);
+    // console.log("> socket data");
+    // console.log(data);
 
     // TODO: error handling
     const frame = WebSocketFrame.fromBuffer(data);
@@ -232,7 +230,9 @@ export class WebSocketClient extends EventEmitter {
       frame.opcode === WebSocketFrameOpcode.binary ||
       frame.opcode === WebSocketFrameOpcode.text
     ) {
-      // TODO: implement
+      console.log("Emitting message");
+      const isBinary = frame.opcode === WebSocketFrameOpcode.binary;
+      this.emit(WebSocketClientEvents.message, frame.payloadData, isBinary);
     } else if (frame.opcode === WebSocketFrameOpcode.continuation) {
       // TODO: implement
     } else if (frame.opcode === WebSocketFrameOpcode.conn_close) {
@@ -273,8 +273,8 @@ export class WebSocketClient extends EventEmitter {
     // Outgoing frames from client must always be masked
     const maskingKey = this.generateMaskingKey();
 
-    // TODO: remove
-    console.log("maskingKey: " + Utilities.dec2bin(maskingKey));
+    // // TODO: remove
+    // console.log("maskingKey: " + Utilities.dec2bin(maskingKey));
 
     const frame = new WebSocketFrame({
       fin: true,
@@ -286,7 +286,7 @@ export class WebSocketClient extends EventEmitter {
     });
 
     // TODO: remove
-    console.log(">> SENDING FRAME");
+    // console.log(">> SENDING FRAME");
 
     // Send the frame
     assert(this.socket);
@@ -297,11 +297,15 @@ export class WebSocketClient extends EventEmitter {
     if (this.state !== "open")
       throw new WebSocketError("Unable to close: connection is not open");
 
-    assert(this.socket !== null);
+    assert(this.socket);
 
     // TODO: send close frame
 
-    this.socket!.off("close", this.onSocketClose);
+    this.socket.off("close", this.onSocketClose);
+    this.socket.off("end", this.onSocketEnd);
+    this.socket.off("data", this.onSocketData);
+    this.socket.off("error", this.onSocketError);
+
     // TODO: remove any other socket events
 
     // this.emit(WebSocketClientEvents.close);
