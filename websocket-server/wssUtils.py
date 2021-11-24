@@ -20,4 +20,4 @@ def bs2b(s:str) -> bytes:
   """
   Returns the byte sequence representation of the given bit string
   """
-  return int(s, 2).to_bytes(len(s)//8 + 1, 'little')
+  return int(s, 2).to_bytes(len(s)//8, 'big')

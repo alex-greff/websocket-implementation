@@ -84,7 +84,10 @@ class WebSocketConnection:
         self.socket.send(payload)
 
     def _sendClose(self):
-        return
+        frame = WSFrame(b'')
+        frame.set_opcode(OP_CLOSE)
+        payload = frame.get_bytes(True)
+        self.socket.send(payload)
 
     # API method to register websocket message handler
     def onMessage(self, msgHandler):
