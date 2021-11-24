@@ -108,9 +108,6 @@ export class WebSocketFrame {
       throw new WebSocketFrameError(
         "Payload bytes length does not match payload buffer length"
       );
-
-    if (this.opcode === WebSocketFrameOpcode.conn_close && !this.closeReason)
-      throw new WebSocketFrameError("Close reason required");
   }
 
   static validateOpcode(opcode: number): void | never {
@@ -294,10 +291,8 @@ export class WebSocketFrame {
     // Handle close control frame
     let closeReason: WebSocketFrameCloseReason | undefined = undefined;
     let closeReasonBytes = 0;
-    if (opcode === WebSocketFrameOpcode.conn_close) {
-      if (bufferRemainingBits / 8 < 2)
-        throw new WebSocketFrameError("Missing close reason code bytes");
-
+    const hasCloseReasonCode = bufferRemainingBits / 8 >= 2;
+    if (opcode === WebSocketFrameOpcode.conn_close && hasCloseReasonCode) {
       closeReasonBytes = BITS_LEN_CLOSE_REASON_CODE;
       const closeReasonNum = bitBuffer.buffer.readUInt16BE(
         (PayloadLenLevelBits.LEVEL0 +

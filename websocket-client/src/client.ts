@@ -10,11 +10,15 @@ import crypto from "crypto";
 import * as Utilities from "./utilities";
 import { Socket } from "net";
 import { assert } from "tsafe";
-import { WebSocketFrame, WebSocketFrameOpcode } from "./frame";
+import {
+  WebSocketFrame,
+  WebSocketFrameCloseReason,
+  WebSocketFrameOpcode,
+} from "./frame";
 
 type WebSocketProtocol = "ws";
 
-type WebSocketConnectionState = "connecting" | "open" | "ending";
+type WebSocketConnectionState = "connecting" | "open" | "closing" | "closed";
 
 const VALID_PROTOCOLS: string[] = ["ws:"];
 const DEFAULT_PORTS: { [p: string]: number } = {
@@ -36,10 +40,6 @@ enum WebSocketClientEvents {
   pong = "pong",
 }
 
-interface WebSocketMessageEvent {
-  // TODO: implement
-}
-
 export declare interface WebSocketClient {
   on(event: "open", listener: () => void): this;
   on(
@@ -57,6 +57,8 @@ export class WebSocketClient extends EventEmitter {
 
   private state: WebSocketConnectionState;
   private socket?: Socket;
+
+
 
   constructor(url: string) {
     super();
@@ -186,6 +188,7 @@ export class WebSocketClient extends EventEmitter {
     req.on("response", (res) => {
       console.log("> response");
       console.log(res);
+      // TODO: handle this
     });
 
     req.on("close", () => {
@@ -198,15 +201,23 @@ export class WebSocketClient extends EventEmitter {
   }
 
   private onSocketClose(hadError: boolean) {
-    console.log("> socket close");
+    console.log("> socket close"); // TODO: remove
 
-    // this.socket?.off("close", this.onSocketClose);
-    // this.emit(WebSocketClientEvents.close);
+    // TODO: do we need to do anything else?
+
+    if (this.state !== "closed") {
+      this.finalizeClose();
+    }
   }
 
   private onSocketEnd() {
-    console.log("> socket end");
-    // TODO: implement
+    console.log("> socket end"); // TODO: remove
+
+    // TODO: do we need to do anything else?
+
+    if (this.state !== "closed") {
+      this.finalizeClose();
+    }
   }
 
   private onSocketError(err: Error) {
@@ -223,21 +234,69 @@ export class WebSocketClient extends EventEmitter {
     const frame = WebSocketFrame.fromBuffer(data);
 
     if (frame.opcode === WebSocketFrameOpcode.ping) {
-      this.emit(WebSocketClientEvents.ping, frame.payloadData);
+      this.handlePingFrame(frame);
     } else if (frame.opcode === WebSocketFrameOpcode.pong) {
-      this.emit(WebSocketClientEvents.pong, frame.payloadData);
+      this.handlePongFrame(frame);
     } else if (
       frame.opcode === WebSocketFrameOpcode.binary ||
       frame.opcode === WebSocketFrameOpcode.text
     ) {
-      console.log("Emitting message");
-      const isBinary = frame.opcode === WebSocketFrameOpcode.binary;
-      this.emit(WebSocketClientEvents.message, frame.payloadData, isBinary);
+      this.handleMessageFrame(frame);
     } else if (frame.opcode === WebSocketFrameOpcode.continuation) {
       // TODO: implement
     } else if (frame.opcode === WebSocketFrameOpcode.conn_close) {
-      // TODO: implement
+      this.handleCloseFrame(frame);
     } else Utilities.notReached();
+  }
+
+  private handlePingFrame(frame: WebSocketFrame) {
+    assert(frame.opcode === WebSocketFrameOpcode.ping);
+
+    this.emit(WebSocketClientEvents.ping, frame.payloadData);
+  }
+
+  private handlePongFrame(frame: WebSocketFrame) {
+    assert(frame.opcode === WebSocketFrameOpcode.pong);
+
+    this.emit(WebSocketClientEvents.pong, frame.payloadData);
+  }
+
+  private handleMessageFrame(frame: WebSocketFrame) {
+    assert(
+      frame.opcode === WebSocketFrameOpcode.binary ||
+        frame.opcode === WebSocketFrameOpcode.text
+    );
+
+    const isBinary = frame.opcode === WebSocketFrameOpcode.binary;
+    this.emit(WebSocketClientEvents.message, frame.payloadData, isBinary);
+  }
+
+  private handleCloseFrame(frame: WebSocketFrame) {
+    assert(frame.opcode === WebSocketFrameOpcode.conn_close);
+
+    // We did not send a closing frame before so send one back
+    if (this.state !== "closing") {
+      this.sendFrame(
+        WebSocketFrameOpcode.conn_close,
+        undefined,
+        WebSocketFrameCloseReason.normal
+      );
+    }
+
+    this.finalizeClose();
+  }
+
+  private finalizeClose() {
+    this.state = "closed";
+
+    if (this.socket) {
+      this.socket.removeAllListeners("close");
+      this.socket.removeAllListeners("end");
+      this.socket.removeAllListeners("data");
+      this.socket.removeAllListeners("error");
+    }
+
+    this.emit(WebSocketClientEvents.close);
   }
 
   public ping(data?: any) {
@@ -269,7 +328,11 @@ export class WebSocketClient extends EventEmitter {
     this.sendFrame(WebSocketFrameOpcode.text, buffer);
   }
 
-  private sendFrame(opcode: WebSocketFrameOpcode, payloadData?: Buffer) {
+  private sendFrame(
+    opcode: WebSocketFrameOpcode,
+    payloadData?: Buffer,
+    closeReason?: WebSocketFrameCloseReason
+  ) {
     // Outgoing frames from client must always be masked
     const maskingKey = this.generateMaskingKey();
 
@@ -283,6 +346,7 @@ export class WebSocketClient extends EventEmitter {
       opcode,
       payloadBytesLen: payloadData?.length ?? 0,
       payloadData,
+      closeReason,
     });
 
     // TODO: remove
@@ -294,20 +358,17 @@ export class WebSocketClient extends EventEmitter {
   }
 
   public close(code?: number, data?: string | Buffer): void {
+    // Do nothing if the client is not already open
     if (this.state !== "open")
-      throw new WebSocketError("Unable to close: connection is not open");
+      return;
 
-    assert(this.socket);
+    this.state = "closing";
 
-    // TODO: send close frame
-
-    this.socket.off("close", this.onSocketClose);
-    this.socket.off("end", this.onSocketEnd);
-    this.socket.off("data", this.onSocketData);
-    this.socket.off("error", this.onSocketError);
-
-    // TODO: remove any other socket events
-
-    // this.emit(WebSocketClientEvents.close);
+    // Send close frame
+    this.sendFrame(
+      WebSocketFrameOpcode.conn_close,
+      undefined,
+      WebSocketFrameCloseReason.normal
+    );
   }
 }
