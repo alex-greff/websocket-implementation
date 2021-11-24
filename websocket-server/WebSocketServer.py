@@ -1,8 +1,9 @@
 from functools import partial
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer, HTTPServer
 from hashlib import sha1
 import base64
 import struct
+import multiprocessing
 from socket import socket as Socket
 # local imports:
 from wssUtils import s2bs, b2bs, bs2s, bs2b
@@ -48,19 +49,26 @@ class Server(BaseHTTPRequestHandler):
         self.end_headers()
         self.wss._newConnection(socket)
 
+# class MyServer(socketserver.ThreadingMixIn, HTTPServer):
+#     pass
 
 class WebSocketServer:
     def __init__(self, port, connectionCb):
         self.connectionCb = connectionCb
         handler = partial(Server, self)
-        httpd = HTTPServer(('', port), handler)
-        httpd.serve_forever()
+        server = ThreadingHTTPServer(('', port), handler)
+        self.server_process = multiprocessing.Process(target=server.serve_forever, args=())
+        self.server_process.start()
+        print('its uhh serving')
 
     def _newConnection(self, socket: Socket):
         newConn = WebSocketConnection(socket)
         self.connectionCb(newConn)
         newConn._listen()
 
+    def closeServer(self):
+        if self.server_process:
+            self.server_process.terminate()
 
 class WebSocketConnection:
     def __init__(self, socket):

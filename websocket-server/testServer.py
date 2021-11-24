@@ -9,3 +9,4 @@ def onMessage(text):
 
 
 wss = WebSocketServer(3051, connectionHandler)
+print('did we get here?')
