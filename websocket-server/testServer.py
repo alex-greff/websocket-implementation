@@ -4,6 +4,6 @@ def connectionHandler(ws: WebSocketConnection):
     ws.onMessage(onMessage)
 
 def onMessage(text):
-    print(text)
+    pass
 
 wss = WebSocketServer(3051, connectionHandler)
