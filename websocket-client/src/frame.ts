@@ -285,7 +285,7 @@ export class WebSocketFrame {
         BITS_OFFSET_PAYLOAD +
           PayloadLenLevelBits.LEVEL0 +
           payloadAdditionalBitsLength,
-          maskingKeyBytes,
+        maskingKeyBytes,
         false
       );
       bufferRemainingBits -= BITS_LEN_MASKING_KEY;
@@ -342,7 +342,7 @@ export class WebSocketFrame {
         WebSocketFrame.applyMaskToBuffer(payloadData, maskingKey);
       }
     }
-    
+
     return new WebSocketFrame({
       fin,
       mask,

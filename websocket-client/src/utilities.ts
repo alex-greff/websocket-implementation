@@ -49,7 +49,7 @@ export function intGetByteAt(intVal: number, byteNum: number) {
   const shift: number = 8 * byteNum;
   // >>> is to convert back to an unsigned int
   // Source: https://stackoverflow.com/a/54030756
-  const mask: number = 255 << shift >>> 0;
+  const mask: number = (255 << shift) >>> 0;
   // We also want to do an unsigned right bit shift here too
   const byteVal = (intVal & mask) >>> shift;
 
@@ -61,7 +61,7 @@ export function intGetByteAt(intVal: number, byteNum: number) {
  * (i.e. has the toString function).
  */
 export function isStringifiable(value: any): boolean {
-  return (typeof(value["toString"]) === "function");
+  return typeof value["toString"] === "function";
 }
 
 /**

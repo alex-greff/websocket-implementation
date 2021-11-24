@@ -87,13 +87,6 @@ const onClientClose = (ws: WebSocket) => {
 };
 
 const onClientMessage = (messageRaw: RawData, ws: WebSocket) => {
-  // TODO: remove
-  // console.log("> messageRaw: ");
-  // console.log(messageRaw);
-  // const messageStr = messageRaw.toString("utf-8");
-  // console.log("> messageStr: ");
-  // console.log(messageStr);
-
   const messageStr = messageRaw.toString();
   try {
     const messageJson = JSON.parse(messageStr);
@@ -139,7 +132,7 @@ const onClientMessage = (messageRaw: RawData, ws: WebSocket) => {
       const roomConnectedMsg = new WsRoomConnected(
         roomId,
         room.members.map((member) => member.name),
-        [...room.messages],
+        [...room.messages]
       );
       ws.send(roomConnectedMsg.toJson());
 
@@ -157,7 +150,7 @@ const onClientMessage = (messageRaw: RawData, ws: WebSocket) => {
           console.log("Unable to send members-changed to WS client");
         }
       }
-    } 
+    }
     // Client leaves room
     else if (message.type == "room-leave") {
       const roomLeaveMsg = WsRoomLeave.fromJson(messageJson);
@@ -172,9 +165,10 @@ const onClientMessage = (messageRaw: RawData, ws: WebSocket) => {
       assert(self !== null);
 
       // Remove member from member list
-      const memberIdx = connectedRoom.members.findIndex(member => member.name == self.name);
-      if (memberIdx > -1)
-        connectedRoom.members.splice(memberIdx, 1);
+      const memberIdx = connectedRoom.members.findIndex(
+        (member) => member.name == self.name
+      );
+      if (memberIdx > -1) connectedRoom.members.splice(memberIdx, 1);
 
       // Send members-changed message to all remaining clients
       const membersChangedMsg = new WsMembersChanged(
