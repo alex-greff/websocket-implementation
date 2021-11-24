@@ -21,6 +21,8 @@ GUID = b"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 OP_CONTINUATION = 0x0
 OP_TEXT = 0x1
 OP_BINARY = 0x2
+OP_CLOSE = 0x8
+OP_PING = 0x9
 
 
 class Server(BaseHTTPRequestHandler):
@@ -61,8 +63,7 @@ class WebSocketServer:
 
 class WebSocketConnection:
     def __init__(self, socket):
-        self.socket = socket
-        pass
+        self.socket: Socket = socket
 
     # API method to send data over websocket
     def send(self, data):
@@ -81,9 +82,29 @@ class WebSocketConnection:
     def _listen(self):
         while True:
             wsMsg = self.socket.recv(512)
-			# TODO: do some parsing and determine which handler to invoke
-			# based on the opcode of the frame
-            self.msgHandler(wsMsg)
+            # get data from websocket header
+            finFlag = (wsMsg[0] & 0x80) >> 7
+            opcode = wsMsg[0] & 0xf
+            maskFlag = (wsMsg[1] & 0x80) >> 7
+            payloadLen = wsMsg[1] & 0x7f
+            nextByte = 2
+            if (payloadLen == 126):
+                (payloadLen,) = struct.unpack("!H", wsMsg[2:4])
+                nextByte = 4
+            elif (payloadLen == 127):
+                (payloadLen,) = struct.unpack("!I", wsMsg[2:6])
+                nextByte = 6
+            (maskingKey,) = struct.unpack("!I", wsMsg[nextByte:nextByte + 4])
+            nextByte += 4
+            print(finFlag, opcode, maskFlag, payloadLen, maskingKey)
+            if (opcode == OP_CLOSE):
+                self._sendClose()
+                self.socket.close()
+                break
+            elif (opcode == OP_PING):
+                self._sendPong()
+            else:
+                self.msgHandler(wsMsg)
 
 
 class WSFrame:
