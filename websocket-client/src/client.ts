@@ -14,7 +14,7 @@ import { WebSocketFrame, WebSocketFrameOpcode } from "./frame";
 
 type WebSocketProtocol = "ws";
 
-type WebSocketConnectionState = "connecting" | "open";
+type WebSocketConnectionState = "connecting" | "open" | "ending";
 
 const VALID_PROTOCOLS: string[] = ["ws:"];
 const DEFAULT_PORTS: { [p: string]: number } = {
@@ -32,6 +32,8 @@ enum WebSocketClientEvents {
   open = "open",
   message = "message",
   close = "close",
+  ping = "ping",
+  pong = "pong",
 }
 
 interface WebSocketMessageEvent {
@@ -40,9 +42,13 @@ interface WebSocketMessageEvent {
 
 export declare interface WebSocketClient {
   on(event: "open", listener: () => void): this;
-  on(event: "message", listener: (event: WebSocketMessageEvent) => void): this;
+  on(
+    event: "message",
+    listener: (data: Buffer, isBinary: boolean) => void
+  ): this;
   on(event: "error", listener: (err: Error) => void): this;
   on(event: "close", listener: () => void): this;
+  on(event: "ping" | "pong", listener: (data: Buffer) => void): this;
 }
 
 export class WebSocketClient extends EventEmitter {
@@ -78,7 +84,7 @@ export class WebSocketClient extends EventEmitter {
 
     if (url.port.length == 0) url.port = DEFAULT_PORTS[url.protocol].toString();
 
-    console.log(url); // TODO: remove
+    // console.log(url); // TODO: remove
 
     return url;
   }
@@ -165,7 +171,11 @@ export class WebSocketClient extends EventEmitter {
       this.state = "open";
       this.socket = socket;
 
-      this.socket!.on("close", this.onSocketClose);
+      assert(this.socket);
+      this.socket.once("close", this.onSocketClose.bind(this));
+      this.socket.on("end", this.onSocketEnd.bind(this));
+      this.socket.on("data", this.onSocketData.bind(this));
+      this.socket.on("error", this.onSocketError.bind(this));
       // TODO: add any socket events
 
       this.emit(WebSocketClientEvents.open);
@@ -191,39 +201,75 @@ export class WebSocketClient extends EventEmitter {
 
   private onSocketClose(hadError: boolean) {
     console.log("> socket close");
-    this.emit(WebSocketClientEvents.close);
-  }
-  
 
-  public ping() {
+    // this.socket?.off("close", this.onSocketClose);
+    // this.emit(WebSocketClientEvents.close);
+  }
+
+  private onSocketEnd() {
+    console.log("> socket end");
     // TODO: implement
   }
 
-  public pong() {
+  private onSocketError(err: Error) {
+    console.log("> socket error");
     // TODO: implement
+  }
+
+  private onSocketData(data: Buffer) {
+    // TODO: remove
+    console.log("> socket data");
+    console.log(data);
+
+    // TODO: error handling
+    const frame = WebSocketFrame.fromBuffer(data);
+
+    if (frame.opcode === WebSocketFrameOpcode.ping) {
+      this.emit(WebSocketClientEvents.ping, frame.payloadData);
+    } else if (frame.opcode === WebSocketFrameOpcode.pong) {
+      this.emit(WebSocketClientEvents.pong, frame.payloadData);
+    } else if (
+      frame.opcode === WebSocketFrameOpcode.binary ||
+      frame.opcode === WebSocketFrameOpcode.text
+    ) {
+      // TODO: implement
+    } else if (frame.opcode === WebSocketFrameOpcode.continuation) {
+      // TODO: implement
+    } else if (frame.opcode === WebSocketFrameOpcode.conn_close) {
+      // TODO: implement
+    } else Utilities.notReached();
+  }
+
+  public ping(data?: any) {
+    this.sendFrame(WebSocketFrameOpcode.ping);
+  }
+
+  public pong(data?: any) {
+    this.sendFrame(WebSocketFrameOpcode.pong);
   }
 
   public send(data: any) {
     assert(this.state === "open");
 
-    if (Utilities.isBuffer(data)) 
-      this.sendBuffer(data);
+    if (Utilities.isBuffer(data)) this.sendBuffer(data);
     else if (Utilities.isStringifiable(data))
       this.sendUTF8String(data.toString());
     else
-      throw new WebSocketError("Data type must be a buffer or implement toString");
+      throw new WebSocketError(
+        "Data type must be a buffer or implement toString"
+      );
   }
 
   private sendBuffer(buffer: Buffer) {
-    this.sendFrame(buffer, WebSocketFrameOpcode.binary);
+    this.sendFrame(WebSocketFrameOpcode.binary, buffer);
   }
 
   private sendUTF8String(str: string) {
     const buffer = Buffer.from(str, "utf-8");
-    this.sendFrame(buffer, WebSocketFrameOpcode.text);
+    this.sendFrame(WebSocketFrameOpcode.text, buffer);
   }
 
-  private sendFrame(payloadData: Buffer, opcode: WebSocketFrameOpcode) {
+  private sendFrame(opcode: WebSocketFrameOpcode, payloadData?: Buffer) {
     // Outgoing frames from client must always be masked
     const maskingKey = this.generateMaskingKey();
 
@@ -233,9 +279,9 @@ export class WebSocketClient extends EventEmitter {
     const frame = new WebSocketFrame({
       fin: true,
       mask: true,
-      maskingKey, 
+      maskingKey,
       opcode,
-      payloadBytesLen: payloadData.length,
+      payloadBytesLen: payloadData?.length ?? 0,
       payloadData,
     });
 
@@ -257,5 +303,7 @@ export class WebSocketClient extends EventEmitter {
 
     this.socket!.off("close", this.onSocketClose);
     // TODO: remove any other socket events
+
+    // this.emit(WebSocketClientEvents.close);
   }
 }

@@ -11,7 +11,7 @@ import {
   Text,
   useToast,
 } from "@chakra-ui/react";
-import WebSocket from "ws";
+import WebSocketReference from "ws";
 import {
   WebsocketClient,
   WebsocketClientType,
@@ -20,6 +20,7 @@ import {
 import { useMountedState } from "react-use";
 // TODO: update
 import { WebSocketClient as D58WebSocketClient } from "d58-websocket-client";
+
 
 export type WebsocketSelectorOnConnect = (ws: WebsocketClient) => unknown;
 export type WebsocketSelectorOnDisconnect = () => unknown;
@@ -76,15 +77,8 @@ export const WebsocketSelector: FunctionComponent<Props> = (props) => {
 
     // Connect to new websocket client
     if (!connected) {
-      // TODO: add support for implemented client
-      const ws = new WebSocket(serverUrl);
-
-      const wsD58 = new D58WebSocketClient(serverUrl);
-      
-      wsD58.on("open", () => {
-        console.log("wsD58: open");
-        wsD58.send(Buffer.from("Hellooooooo", "utf-8"));
-      });
+      const ws = (selectedClient === "reference-client") ?
+        new WebSocketReference(serverUrl) : new D58WebSocketClient(serverUrl);
 
       ws.on("open", () => {
         onWsConnect(ws);

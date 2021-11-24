@@ -1,4 +1,4 @@
-import React, { FunctionComponent, useEffect, useMemo, useState } from "react";
+import React, { FunctionComponent, useMemo, useState } from "react";
 import { Box, Button, Flex, Heading, Text, useToast } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import { WebsocketSelector } from "@/components/WebsocketSelector";

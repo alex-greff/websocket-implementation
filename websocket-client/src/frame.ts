@@ -12,6 +12,21 @@ export enum WebSocketFrameOpcode {
   pong = 0xa,
 }
 
+export enum WebSocketFrameCloseReason {
+  normal = 1000,
+  going_away = 1001,
+  protocol_error = 1002,
+  unprocessable_input = 1003,
+  reserved = 1004,
+  reason_not_provided = 1005,
+  abnormal = 1006,
+  invalid_data = 1007,
+  message_to_big = 1009,
+  extension_required = 1010,
+  internal_server_error = 1011,
+  tls_handshake_failed = 1015,
+}
+
 enum PayloadLenLevel {
   LEVEL0 = 0,
   LEVEL1 = 1,
@@ -32,6 +47,8 @@ const BITS_LEN_RSV = 3;
 const BITS_LEN_OPCODE = 4;
 const BITS_LEN_MASK = 1;
 
+const BITS_LEN_CLOSE_REASON_CODE = 2 * 8; // 2 bytes
+
 const BITS_LEN_MASKING_KEY = 4 * 8; // 4 bytes
 
 const MIN_FRAME_BITS_LEN =
@@ -51,34 +68,64 @@ export interface WebSocketFrameValues {
   fin: boolean;
   opcode: WebSocketFrameOpcode;
   mask: boolean;
-  payloadBytesLen: number;
+  payloadBytesLen?: number;
   maskingKey?: number;
   payloadData?: Buffer;
+  closeReason?: WebSocketFrameCloseReason;
 }
 
 export class WebSocketFrame {
-  private fin: boolean;
-  private readonly rsv1: boolean = false;
-  private readonly rsv2: boolean = false;
-  private readonly rsv3: boolean = false;
-  private opcode: number;
-  private mask: boolean;
-  private payloadBytesLen: number;
-  private maskingKey?: number;
-  private payloadData?: Buffer;
+  public readonly fin: boolean;
+  public readonly rsv1: boolean = false;
+  public readonly rsv2: boolean = false;
+  public readonly rsv3: boolean = false;
+  public readonly opcode: number;
+  public readonly mask: boolean;
+  public readonly payloadBytesLen: number;
+  public readonly maskingKey?: number;
+  public readonly payloadData?: Buffer;
+  public readonly closeReason?: WebSocketFrameCloseReason;
 
   constructor(values: WebSocketFrameValues) {
-    this.validateValues(values);
-
     this.fin = values.fin;
     this.opcode = values.opcode;
     this.mask = values.mask;
-    this.payloadBytesLen = values.payloadBytesLen;
+    this.payloadBytesLen = values.payloadBytesLen ?? 0;
     this.maskingKey = values.maskingKey;
     this.payloadData = values.payloadData;
+    this.closeReason = values.closeReason;
+
+    this.validateValues();
   }
 
-  private validateValues(values: WebSocketFrameValues): void | never {
+  private validateValues(): void | never {
+    // TODO: did I get everything?
+
+    if (this.mask && !this.maskingKey)
+      throw new WebSocketFrameError("Missing masking key");
+
+    if (this.payloadData && this.payloadBytesLen !== this.payloadData.length)
+      throw new WebSocketFrameError(
+        "Payload bytes length does not match payload buffer length"
+      );
+
+    if (this.opcode === WebSocketFrameOpcode.conn_close && !this.closeReason)
+      throw new WebSocketFrameError("Close reason required");
+  }
+
+  static validateOpcode(opcode: number): void | never {
+    const valid =
+      opcode === WebSocketFrameOpcode.continuation ||
+      opcode === WebSocketFrameOpcode.text ||
+      opcode === WebSocketFrameOpcode.binary ||
+      opcode === WebSocketFrameOpcode.conn_close ||
+      opcode === WebSocketFrameOpcode.ping ||
+      opcode === WebSocketFrameOpcode.pong;
+
+    if (!valid) throw new WebSocketFrameError(`Invalid opcode: ${opcode}`);
+  }
+
+  static validateCloseReasonCode(closeReasonCode: number): void | never {
     // TODO: implement
   }
 
@@ -114,6 +161,16 @@ export class WebSocketFrame {
     return this.payloadBytesLen * 8;
   }
 
+  private get hasCloseReasonCode(): boolean {
+    return (
+      this.opcode === WebSocketFrameOpcode.conn_close && !!this.closeReason
+    );
+  }
+
+  private get closeReasonCodeBitsLength(): number {
+    return this.hasCloseReasonCode ? BITS_LEN_CLOSE_REASON_CODE : 0;
+  }
+
   private get frameBitsLength(): number {
     return (
       BITS_LEN_FIN +
@@ -122,13 +179,14 @@ export class WebSocketFrame {
       BITS_LEN_MASK +
       this.payloadBitsLength +
       this.maskingKeyBitsLength +
+      this.closeReasonCodeBitsLength +
       this.payloadBitsLen
     );
   }
 
   static applyMaskToBuffer(
     buffer: Buffer,
-    maskingKey: number, 
+    maskingKey: number,
     startOffset: number = 0,
     length?: number
   ) {
@@ -166,12 +224,15 @@ export class WebSocketFrame {
     const rsv = bitBuffer.getBits(BITS_OFFSET_RSV, BITS_LEN_RSV, false);
     bufferRemainingBits -= BITS_LEN_RSV;
     if (rsv !== 0) throw new WebSocketFrameError("RSV bits must be zero");
-    const opcode = bitBuffer.getBits(
+
+    const opcodeNum = bitBuffer.getBits(
       BITS_OFFSET_OPCODE,
       BITS_LEN_OPCODE,
       false
     );
-    // TODO: validate opcode
+    WebSocketFrame.validateOpcode(opcodeNum);
+    const opcode = opcodeNum as WebSocketFrameOpcode;
+    bufferRemainingBits -= BITS_LEN_OPCODE;
 
     const mask = Utilities.intToBool(
       bitBuffer.getBits(BITS_OFFSET_MASK, BITS_LEN_MASK, false)
@@ -216,7 +277,7 @@ export class WebSocketFrame {
     if (mask) {
       if (bufferRemainingBits < BITS_LEN_MASKING_KEY)
         throw new WebSocketFrameError("Buffer length too small");
-      
+
       maskingKey = bitBuffer.getBits(
         BITS_OFFSET_PAYLOAD +
           PayloadLenLevelBits.LEVEL0 +
@@ -225,6 +286,27 @@ export class WebSocketFrame {
         false
       );
       bufferRemainingBits -= BITS_LEN_MASKING_KEY;
+    }
+
+    // Handle close control frame
+    let closeReason: WebSocketFrameCloseReason | undefined = undefined;
+    let closeReasonBytes = 0;
+    if (opcode === WebSocketFrameOpcode.conn_close) {
+      if (bufferRemainingBits / 8 < 2)
+        throw new WebSocketFrameError("Missing close reason code bytes");
+
+      closeReasonBytes = BITS_LEN_CLOSE_REASON_CODE;
+      const closeReasonNum = bitBuffer.buffer.readUInt16BE(
+        (PayloadLenLevelBits.LEVEL0 +
+          payloadAdditionalBitsLength +
+          BITS_LEN_MASKING_KEY) /
+          8
+      );
+      WebSocketFrame.validateCloseReasonCode(closeReasonNum);
+
+      closeReason = closeReasonNum as WebSocketFrameCloseReason;
+
+      bufferRemainingBits -= closeReasonBytes;
     }
 
     if (payloadBytesLen * 8 !== bufferRemainingBits)
@@ -239,7 +321,8 @@ export class WebSocketFrame {
         (BITS_OFFSET_PAYLOAD +
           PayloadLenLevelBits.LEVEL0 +
           payloadAdditionalBitsLength +
-          BITS_LEN_MASKING_KEY) /
+          BITS_LEN_MASKING_KEY +
+          closeReasonBytes) /
         8;
 
       // Copy payload in bitBuffer to payloadData
@@ -264,6 +347,7 @@ export class WebSocketFrame {
       payloadBytesLen,
       maskingKey,
       payloadData,
+      closeReason,
     });
   }
 
@@ -294,7 +378,6 @@ export class WebSocketFrame {
       );
     } else if (this.payloadLenLevel === PayloadLenLevel.LEVEL1) {
       bitBuffer.setBits(BITS_OFFSET_PAYLOAD, 126, PayloadLenLevelBits.LEVEL0);
-      // TODO: these are not in network byte order???
       bitBuffer.setBits(
         BITS_OFFSET_PAYLOAD + PayloadLenLevelBits.LEVEL0,
         this.payloadBytesLen,
@@ -302,7 +385,6 @@ export class WebSocketFrame {
       );
     } else if (this.payloadLenLevel === PayloadLenLevel.LEVEL2) {
       bitBuffer.setBits(BITS_OFFSET_PAYLOAD, 127, PayloadLenLevelBits.LEVEL0);
-      // TODO: these are not in network byte order???
       bitBuffer.setBits(
         BITS_OFFSET_PAYLOAD + PayloadLenLevelBits.LEVEL0,
         this.payloadBytesLen,
@@ -316,7 +398,6 @@ export class WebSocketFrame {
 
       const maskingBytesN = Buffer.allocUnsafe(4);
       maskingBytesN.writeUInt32BE(this.maskingKey);
-      // maskingBytesN.copy(bitBuffer.buffer, this.maskingKeyBitsOffset / 8);
       // TODO: this has to be some endianness stuff, figure it out
       const startIdx = this.maskingKeyBitsOffset / 8;
       bitBuffer.buffer[startIdx] = maskingBytesN[2];
@@ -325,19 +406,35 @@ export class WebSocketFrame {
       bitBuffer.buffer[startIdx + 3] = maskingBytesN[1];
     }
 
+    // Write in close code, if needed
+    if (this.hasCloseReasonCode) {
+      const bufferCloseReasonCodeBytesStart =
+        this.frameBitsLength / 8 -
+        this.payloadBytesLen -
+        this.closeReasonCodeBitsLength / 8;
+      assert(this.closeReason);
+      buffer.writeUInt16BE(this.closeReason, bufferCloseReasonCodeBytesStart);
+    }
+
     // Set payload bytes, if needed
     if (this.payloadData) {
       assert(this.payloadData.length === this.payloadBytesLen);
 
-      const bitBufferPayloadStart =
+      const bufferPayloadStart =
         this.frameBitsLength / 8 - this.payloadBytesLen;
 
       this.payloadData.copy(
         bitBuffer.buffer,
-        bitBufferPayloadStart,
+        bufferPayloadStart,
         0,
         this.payloadBytesLen
       );
+
+      // Account for the close code 2 bytes, if necessary
+      const bufferPayloadStartWithCloseCode =
+        this.frameBitsLength / 8 -
+        this.payloadBytesLen -
+        this.closeReasonCodeBitsLength / 8;
 
       // TODO: remove
       // console.log("bitBufferPayloadStart = " + bitBufferPayloadStart);
@@ -346,12 +443,11 @@ export class WebSocketFrame {
 
       // Mask the bytes in the bit buffer that are for the payload, if needed
       if (this.mask) {
-        
         assert(this.maskingKey);
         WebSocketFrame.applyMaskToBuffer(
           bitBuffer.buffer,
           this.maskingKey,
-          bitBufferPayloadStart,
+          bufferPayloadStartWithCloseCode,
           this.payloadBytesLen
         );
 
