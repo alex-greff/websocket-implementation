@@ -5,7 +5,7 @@ import base64
 import struct
 from socket import socket as Socket
 # local imports:
-from wssUtils import s2bs, b2bs, bs2s
+from wssUtils import s2bs, b2bs, bs2s, bs2b
 
 # HTTP server listening for requests
 # websocket handshake start
@@ -68,9 +68,11 @@ class WebSocketConnection:
     def send(self, data):
         # two cases for data: str or bytes
         if type(data) == str:
-        	pass
-		if type(data) == bytes:
-			pass
+            # create new frame and fill out based on length and stuff
+            frame = WSFrame(b'')
+            print(frame)
+        elif type(data) == bytes:
+            return
 
     # API method to register websocket message handler
     def onMessage(self, msgHandler):
@@ -98,7 +100,10 @@ class WSFrame:
 		self.masking_key = '' # server does not need a masking key if we are not masking yeah
 		self.payload_data = '' # number of bits is 8*the number represented by payload_len
 
-	def get_frame(self):
+	def get_frame(self) -> str:
+		"""
+		Returns the bistring representation of the entire frame
+		"""
 		return (
 			self.fin+
 			self.rsv+
@@ -108,6 +113,14 @@ class WSFrame:
 			self.masking_key+
 			self.payload_data
 		)
+	
+	def get_bytes(self, refresh: bool) -> bytes:
+		"""
+		get the byte sequence of the entire frame, refreshing old bytes optionally
+		"""
+		if (not self.bytes) or refresh:
+			self.bytes = bs2b(self.get_frame())
+		return self.bytes
 
 	def set_fin(self, fin:bool):
 		self.fin = '1' if fin else '0'
