@@ -128,6 +128,7 @@ class WebSocketConnection:
                 (payloadLen,) = struct.unpack("!I", wsMsg[2:6])
                 nextByte = 6
             (maskingKey,) = struct.unpack("!I", wsMsg[nextByte:nextByte + 4])
+            maskbytes = wsMsg[nextByte:nextByte + 4]
             nextByte += 4
             print(finFlag, opcode, maskFlag, payloadLen, maskingKey)
             if (opcode == OP_CLOSE):
@@ -137,7 +138,11 @@ class WebSocketConnection:
             elif (opcode == OP_PING):
                 self._sendPong()
             else:
-                self.msgHandler(wsMsg)
+                unmasked = b''
+                for i,b in enumerate(wsMsg[nextByte:]):
+                    obyte = b ^ maskbytes[i%4]
+                    unmasked += obyte.to_bytes(1, byteorder='big')
+                self.msgHandler(unmasked)
 
 
 class WSFrame:

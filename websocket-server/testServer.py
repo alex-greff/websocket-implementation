@@ -5,7 +5,7 @@ def connectionHandler(ws: WebSocketConnection):
     
 
 def onMessage(text):
-    pass
+    print(text)
 
 
 wss = WebSocketServer(3051, connectionHandler)
