@@ -82,16 +82,16 @@ class WebSocketConnection:
             # payload length is the number of bytes needed to store payload
             # each char of a utf-8 string is a byte
             data_bytelen = len(data.encode())
-            frame.set_payload_len(bin(data_bytelen)[2:])
-            frame.set_payload_data(s2bs(data))
+            frame.set_payload_len(data_bytelen)
+            frame.set_payload_data(data)
             print(frame)
         elif type(data) == bytes:
             frame = WSFrame(b'')
             frame.set_opcode(OP_BINARY)
             print(frame)
             data_bytelen = len(data)
-            frame.set_payload_len(bin(data_bytelen)[2:])
-            frame.set_payload_data(b2bs(data))
+            frame.set_payload_len(data_bytelen)
+            frame.set_payload_data(data)
         
         payload = frame.get_bytes(True)
         self.socket.send(payload)
@@ -191,7 +191,7 @@ class WSFrame:
         self.opcode = s
     
     # plen: int, number of bytes that our payload takes up
-    def set_payload_len(self, plen):
+    def set_payload_len(self, plen:int):
         plen_bits = bin(plen)[2:]
         if plen <= 125:
             self.payload_len = plen_bits;
