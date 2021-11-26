@@ -1,5 +1,5 @@
 from functools import partial
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer, HTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from hashlib import sha1
 import base64
 import struct
@@ -49,8 +49,6 @@ class Server(BaseHTTPRequestHandler):
         self.end_headers()
         self.wss._newConnection(socket)
 
-# class MyServer(socketserver.ThreadingMixIn, HTTPServer):
-#     pass
 
 class WebSocketServer:
     def __init__(self, port, connectionCb):
@@ -81,9 +79,22 @@ class WebSocketConnection:
             # create new frame and fill out based on length and stuff
             frame = WSFrame(b'')
             frame.set_opcode(OP_TEXT)
+            # payload length is the number of bytes needed to store payload
+            # each char of a utf-8 string is a byte
+            data_bytelen = len(data.encode())
+            frame.set_payload_len(bin(data_bytelen)[2:])
+            frame.set_payload_data(s2bs(data))
             print(frame)
         elif type(data) == bytes:
-            return
+            frame = WSFrame(b'')
+            frame.set_opcode(OP_BINARY)
+            print(frame)
+            data_bytelen = len(data)
+            frame.set_payload_len(bin(data_bytelen)[2:])
+            frame.set_payload_data(b2bs(data))
+        
+        payload = frame.get_bytes(True)
+        self.socket.send(payload)
     
     def _sendPong(self):
         frame = WSFrame(b'')
