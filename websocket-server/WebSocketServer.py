@@ -57,7 +57,7 @@ class WebSocketServer:
         server = ThreadingHTTPServer(('', port), handler)
         self.server_process = multiprocessing.Process(target=server.serve_forever, args=())
         self.server_process.start()
-        print('its uhh serving')
+        print('Server serving')
 
     def _newConnection(self, socket: Socket):
         newConn = WebSocketConnection(socket)
@@ -76,36 +76,30 @@ class WebSocketConnection:
     def send(self, data):
         # two cases for data: str or bytes
         if type(data) == str:
-            # create new frame and fill out based on length and stuff
+            # create new frame and fill out based on length and type
             frame = WSFrame(b'')
             frame.set_opcode(OP_TEXT)
-            # payload length is the number of bytes needed to store payload
-            # each char of a utf-8 string is a byte
             data_bytelen = len(data.encode())
-            frame.set_payload_len(data_bytelen)
-            frame.set_payload_data(data)
-            print(frame)
         elif type(data) == bytes:
             frame = WSFrame(b'')
             frame.set_opcode(OP_BINARY)
-            print(frame)
             data_bytelen = len(data)
-            frame.set_payload_len(data_bytelen)
-            frame.set_payload_data(data)
         
-        payload = frame.get_bytes(True)
+        frame.set_payload_len(data_bytelen)
+        frame.set_payload_data(data)
+        payload = frame.get_bytes()
         self.socket.send(payload)
     
     def _sendPong(self):
         frame = WSFrame(b'')
         frame.set_opcode(OP_PONG)
-        payload = frame.get_bytes(True)
+        payload = frame.get_bytes()
         self.socket.send(payload)
 
     def _sendClose(self):
         frame = WSFrame(b'')
         frame.set_opcode(OP_CLOSE)
-        payload = frame.get_bytes(True)
+        payload = frame.get_bytes()
         self.socket.send(payload)
 
     # API method to register websocket message handler
@@ -149,19 +143,21 @@ class WSFrame:
     def __init__(self, bytes):
         self.bytes = bytes if bytes else b''
         self.fin = '1' # 1 is True, 0 is False, denotes the final frame as part of one msg
-        self.rsv = '000' # 3 filler bits
-        self.opcode = '0000' # 4 bits, 1 is text, 2 is binary data etc..
+        self.rsv = '000' # 3 filler bits, reserved for "special" websocket use
+        self.opcode = '0000' # 4 bits, 1 is text, 2 is binary data etc.. (See predefined opcodes above)
         self.mask = '0' # 1 bit, true if payload is masked (server does not need to mask data)
         self.payload_len = '0000000' # 7 bits, or 7+16 bits or 7+64 bits
         # if first 7 bits are 0-125, that is the length of payload
         # if first 7 bits are 126, we interpret the following 16 bits as the actual payload length
         # if first 7 bits are 127, we interpret the following 64 bits as the actual payload length
         self.masking_key = '' # server does not need a masking key if we are not masking yeah
-        self.payload_data = '' # number of bits is 8*the number represented by payload_len
+        
+        # the only non-bitstring variable
+        self.payload_data = b'' # number of bits is 8*the number represented by payload_len
 
     def get_frame(self) -> str:
         """
-        Returns the bistring representation of the entire frame
+        Returns the bistring representation of the entire frame header (so it excludes the payload data)
         """
 
         return (
@@ -170,47 +166,53 @@ class WSFrame:
             self.opcode+
             self.mask+
             self.payload_len+
-            self.masking_key+
-            self.payload_data
+            self.masking_key
         )
     
-    def get_bytes(self, refresh: bool) -> bytes:
+    def get_bytes(self, refresh: bool = False) -> bytes:
         """
         get the byte sequence of the entire frame, refreshing old bytes optionally
+        NOTE: This server does not mask anything sent out!
         """
         if (not self.bytes) or refresh:
-            self.bytes = bs2b(self.get_frame())
+            # set first bit of ws header
+            prefix = 0x80 ^ int(self.opcode, 2)
+            self.bytes = prefix.to_bytes(1, 'big') + bs2b(self.payload_len) + self.payload_data
         return self.bytes
 
     def set_fin(self, fin:bool):
         self.fin = '1' if fin else '0'
 
-    # opcode: hexadecimal int, sets the opcode variable accordingly
+    # opcode: int, sets the opcode variable accordingly
     def set_opcode(self, opcode:int):
         s = bin(opcode)[2:] # will be 4 bits if opcode is one hexadecimal char
-        self.opcode = s
+        padding = '0'*(4-len(s))
+        assert(len(s) <= 4)
+        self.opcode = padding+s
     
     # plen: int, number of bytes that our payload takes up
     def set_payload_len(self, plen:int):
+        # NOTE: assumes payload length doesn't exceed 2*64 bytes
         plen_bits = bin(plen)[2:]
         if plen <= 125:
             self.payload_len = plen_bits;
         elif plen < 65536:
             # case where we hard code the first 7 bits to be = 126 and append plen_bits
             prefix = bin(126)[2:]
-            self.payload_len = prefix + plen_bits
+            self.payload_len = prefix + '0'*(16-len(plen_bits)) + plen_bits
         else:
             # case where we hard code the first 7 bits to be = 127 and append plen_bits
             prefix = bin(127)[2:]
-            self.payload_len = prefix + plen_bits
+            self.payload_len = prefix + '0'*(64-len(plen_bits)) +plen_bits
     
+    # data: str or bytes data to be sent. Will be encoded to bytes if is str.
     def set_payload_data(self, data):
         if not data:
-            self.payload_data = ''
+            self.payload_data = b''
             return
         # if data is text, we convert to bytes, and then convert to bin
         if type(data) == str:
-            self.payload_data = s2bs(data)
+            self.payload_data = data.encode()
         # if data is bytes:
         if type(data) == bytes:
-            self.payload_data = b2bs(data)
+            self.payload_data = data
