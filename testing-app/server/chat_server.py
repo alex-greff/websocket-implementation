@@ -190,4 +190,4 @@ def onMessage(text: Union[str, bytes], ws: WebSocketConnection):
         return
     
 
-wss = WebSocketServer(3051, connectionHandler)
+wss = WebSocketServer(3052, connectionHandler)

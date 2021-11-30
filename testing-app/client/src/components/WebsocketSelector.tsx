@@ -70,7 +70,7 @@ export const WebsocketSelector: FunctionComponent<Props> = (props) => {
     // TODO: update URL for implemented server
     const serverUrl =
       selectedServer === "implemented-server"
-        ? "ws://localhost:3051"
+        ? "ws://localhost:3052"
         : "ws://localhost:3051";
 
     // Connect to new websocket client
