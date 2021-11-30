@@ -5,6 +5,7 @@ import {
   WebSocketInitializationError,
   WebSocketHandshakeError,
   WebSocketError,
+  WebSocketUnsupportedError,
 } from "./exceptions";
 import crypto from "crypto";
 import * as Utilities from "./utilities";
@@ -15,8 +16,6 @@ import {
   WebSocketFrameCloseReason,
   WebSocketFrameOpcode,
 } from "./frame";
-
-type WebSocketProtocol = "ws";
 
 type WebSocketConnectionState = "connecting" | "open" | "closing" | "closed";
 
@@ -38,6 +37,7 @@ enum WebSocketClientEvents {
   close = "close",
   ping = "ping",
   pong = "pong",
+  error = "error",
 }
 
 export declare interface WebSocketClient {
@@ -49,6 +49,7 @@ export declare interface WebSocketClient {
   on(event: "error", listener: (err: Error) => void): this;
   on(event: "close", listener: () => void): this;
   on(event: "ping" | "pong", listener: (data: Buffer) => void): this;
+  on(event: "error", listener: (error: Error) => void): this;
 }
 
 export class WebSocketClient extends EventEmitter {
@@ -57,8 +58,6 @@ export class WebSocketClient extends EventEmitter {
 
   private state: WebSocketConnectionState;
   private socket?: Socket;
-
-
 
   constructor(url: string) {
     super();
@@ -138,8 +137,7 @@ export class WebSocketClient extends EventEmitter {
     }
 
     // Note: ignoring Sec-WebSocket-Extensions and Sec-WebSocket-Protocol
-    // headers
-    // TODO: probably should parse this and confirm it's empty
+    // headers since we do not support any extensions
   }
 
   private startConnection() {
@@ -176,77 +174,48 @@ export class WebSocketClient extends EventEmitter {
       this.socket.on("end", this.onSocketEnd.bind(this));
       this.socket.on("data", this.onSocketData.bind(this));
       this.socket.on("error", this.onSocketError.bind(this));
-      // TODO: add any socket events
 
       this.emit(WebSocketClientEvents.open);
-
-      // TODO: remove
-      console.log("> upgrade");
-      console.log(res);
-    });
-
-    req.on("response", (res) => {
-      console.log("> response");
-      console.log(res);
-      // TODO: handle this
-    });
-
-    req.on("close", () => {
-      // TODO: this close is allowed, ignore this
-      // TODO: how to handle abnormal close?
-      // console.log("> req close");
-      // this.socket?.end();
-      // this.emit(WebSocketClientEvents.close);
     });
   }
 
   private onSocketClose(hadError: boolean) {
-    console.log("> socket close"); // TODO: remove
-
-    // TODO: do we need to do anything else?
-
     if (this.state !== "closed") {
       this.finalizeClose();
     }
   }
 
   private onSocketEnd() {
-    console.log("> socket end"); // TODO: remove
-
-    // TODO: do we need to do anything else?
-
     if (this.state !== "closed") {
       this.finalizeClose();
     }
   }
 
   private onSocketError(err: Error) {
-    console.log("> socket error");
-    // TODO: implement
+    this.emit(WebSocketClientEvents.error, err);
   }
 
   private onSocketData(data: Buffer) {
-    // TODO: remove
-    // console.log("> socket data");
-    // console.log(data);
+    try {
+      const frame = WebSocketFrame.fromBuffer(data);
 
-    // TODO: error handling
-    const frame = WebSocketFrame.fromBuffer(data);
-
-    if (frame.opcode === WebSocketFrameOpcode.ping) {
-      this.handlePingFrame(frame);
-    } else if (frame.opcode === WebSocketFrameOpcode.pong) {
-      this.handlePongFrame(frame);
-    } else if (
-      frame.opcode === WebSocketFrameOpcode.binary ||
-      frame.opcode === WebSocketFrameOpcode.text
-    ) {
-      this.handleMessageFrame(frame);
-    } else if (frame.opcode === WebSocketFrameOpcode.continuation) {
-      // TODO: implement
-    } else if (frame.opcode === WebSocketFrameOpcode.conn_close) {
-      this.handleCloseFrame(frame);
-    } else Utilities.notReached();
+      if (frame.opcode === WebSocketFrameOpcode.ping) {
+        this.handlePingFrame(frame);
+      } else if (frame.opcode === WebSocketFrameOpcode.pong) {
+        this.handlePongFrame(frame);
+      } else if (
+        frame.opcode === WebSocketFrameOpcode.binary ||
+        frame.opcode === WebSocketFrameOpcode.text
+      ) {
+        this.handleMessageFrame(frame);
+      } else if (frame.opcode === WebSocketFrameOpcode.continuation) {
+        throw new WebSocketUnsupportedError("Fragmentation not supported.");
+      } else if (frame.opcode === WebSocketFrameOpcode.conn_close) {
+        this.handleCloseFrame(frame);
+      } else Utilities.notReached();
+    } catch (err) {
+      this.emit(WebSocketClientEvents.error, err);
+    }
   }
 
   private handlePingFrame(frame: WebSocketFrame) {
@@ -336,9 +305,6 @@ export class WebSocketClient extends EventEmitter {
     // Outgoing frames from client must always be masked
     const maskingKey = this.generateMaskingKey();
 
-    // // TODO: remove
-    // console.log("maskingKey: " + Utilities.dec2bin(maskingKey));
-
     const frame = new WebSocketFrame({
       fin: true,
       mask: true,
@@ -349,9 +315,6 @@ export class WebSocketClient extends EventEmitter {
       closeReason,
     });
 
-    // TODO: remove
-    // console.log(">> SENDING FRAME");
-
     // Send the frame
     assert(this.socket);
     this.socket.write(frame.toBuffer());
@@ -359,8 +322,7 @@ export class WebSocketClient extends EventEmitter {
 
   public close(code?: number, data?: string | Buffer): void {
     // Do nothing if the client is not already open
-    if (this.state !== "open")
-      return;
+    if (this.state !== "open") return;
 
     this.state = "closing";
 

@@ -220,9 +220,6 @@ const onClientMessage = (messageRaw: RawData, ws: WebSocket) => {
 
 const onConnection = (ws: WebSocket) => {
   ws.on("message", (m) => onClientMessage(m, ws));
-
-  // TODO: setup heartbeat?
-
   ws.on("close", () => onClientClose(ws));
 };
 

@@ -21,7 +21,7 @@ export enum WebSocketFrameCloseReason {
   reason_not_provided = 1005,
   abnormal = 1006,
   invalid_data = 1007,
-  message_to_big = 1009,
+  message_too_big = 1009,
   extension_required = 1010,
   internal_server_error = 1011,
   tls_handshake_failed = 1015,
@@ -99,8 +99,6 @@ export class WebSocketFrame {
   }
 
   private validateValues(): void | never {
-    // TODO: did I get everything?
-
     if (this.mask && !this.maskingKey)
       throw new WebSocketFrameError("Missing masking key");
 
@@ -123,7 +121,24 @@ export class WebSocketFrame {
   }
 
   static validateCloseReasonCode(closeReasonCode: number): void | never {
-    // TODO: implement
+    const valid =
+      closeReasonCode === WebSocketFrameCloseReason.abnormal ||
+      closeReasonCode === WebSocketFrameCloseReason.extension_required ||
+      closeReasonCode === WebSocketFrameCloseReason.going_away ||
+      closeReasonCode === WebSocketFrameCloseReason.internal_server_error ||
+      closeReasonCode === WebSocketFrameCloseReason.invalid_data ||
+      closeReasonCode === WebSocketFrameCloseReason.message_too_big ||
+      closeReasonCode === WebSocketFrameCloseReason.normal ||
+      closeReasonCode === WebSocketFrameCloseReason.protocol_error ||
+      closeReasonCode === WebSocketFrameCloseReason.reason_not_provided ||
+      closeReasonCode === WebSocketFrameCloseReason.reserved ||
+      closeReasonCode === WebSocketFrameCloseReason.tls_handshake_failed ||
+      closeReasonCode === WebSocketFrameCloseReason.unprocessable_input;
+
+    if (!valid)
+      throw new WebSocketFrameError(
+        `Invalid close reason code: ${closeReasonCode}`
+      );
   }
 
   private get payloadLenLevel(): PayloadLenLevel {
@@ -396,7 +411,7 @@ export class WebSocketFrame {
 
       const maskingBytesN = Buffer.allocUnsafe(4);
       maskingBytesN.writeUInt32BE(this.maskingKey);
-      // TODO: this has to be some endianness stuff, figure it out
+      
       const startIdx = this.maskingKeyBitsOffset / 8;
       bitBuffer.buffer[startIdx] = maskingBytesN[2];
       bitBuffer.buffer[startIdx + 1] = maskingBytesN[3];
@@ -434,11 +449,6 @@ export class WebSocketFrame {
         this.payloadBytesLen -
         this.closeReasonCodeBitsLength / 8;
 
-      // TODO: remove
-      // console.log("bitBufferPayloadStart = " + bitBufferPayloadStart);
-      // console.log("payloadData (unmasked):");
-      // console.log(this.payloadData);
-
       // Mask the bytes in the bit buffer that are for the payload, if needed
       if (this.mask) {
         assert(this.maskingKey);
@@ -448,23 +458,8 @@ export class WebSocketFrame {
           bufferPayloadStartWithCloseCode,
           this.payloadBytesLen
         );
-
-        // TODO: remove
-        // const payloadMasked = Buffer.alloc(this.payloadBytesLen);
-        // bitBuffer.buffer.copy(
-        //   payloadMasked,
-        //   0,
-        //   bitBufferPayloadStart,
-        //   bitBufferPayloadStart + this.payloadBytesLen
-        // );
-        // console.log("payloadData (masked):");
-        // console.log(payloadMasked);
       }
     }
-
-    // TODO: remove
-    // console.log("bitBuffer.buffer");
-    // console.log(bitBuffer.buffer);
 
     return bitBuffer.buffer;
   }
