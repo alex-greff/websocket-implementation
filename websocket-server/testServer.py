@@ -9,7 +9,7 @@ def connectionHandler(ws: WebSocketConnection):
 def onMessage(text):
     print(text)
     for ws in wsList:
-        ws.send("This is a test message buddy")
+        ws.send('{"type":"room-connected","roomId":"69","members":["anton"],"messages":[]}')
     
 
 
