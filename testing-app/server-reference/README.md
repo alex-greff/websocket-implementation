@@ -3,4 +3,16 @@
 A reference WebSocket server using Node.js that uses the `ws` package's 
 WebSocket server.
 
-TODO: complete
+## Running
+
+Install packages
+
+```
+npm install
+```
+
+Start the server
+
+```
+npm run start:dev
+```

@@ -1,8 +1,3 @@
-TODO: put server code here
+# Websocket Server
 
-TODOs:
-- Fix infinite loop threading
-- Parsing raw data on _listen (struct gang?)
-- Handle chunks unti FIN bit recieved
-- Fill out websocket send msg
-- 
+The code for our Websocket server implementation.

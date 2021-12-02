@@ -2,23 +2,33 @@
 
 The Electron app client for testing our WebSocket server and client.
 
-## Development
+## Running
 
-Before continuing, make sure the servers are running (see the README.md files
-inside of `server` and `server-reference`)
+Before continuing, make sure the Websocket servers are running
+(see the README.md files inside of `../server` and `../server-reference`)
 
-Install packages
+Install packages (first time only)
 
 ```
 npm install
 ```
 
-Start development window
+Link our Websocket client package (before doing this make sure to run
+`npm run create:link` in `../../websocket-client` beforehand) (first time only)
 
 ```
-npm run start
+npm run link:ws-client
 ```
 
-## Building Installer
+Start a development window
 
-TODO: complete
+```
+npm run start:dev
+```
+
+Optionally, `num` (between 2 and 4, inclusive) windows can be opened at
+once with:
+
+```
+npm run start:dev-[num]
+```
