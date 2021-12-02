@@ -8,7 +8,6 @@ import {
   WsRoomConnected,
   WsReceivedMessage,
   WsMembersChanged,
-  WsMessage,
   WsRoomLeave,
 } from "@/models";
 import { assert } from "tsafe";
@@ -18,23 +17,41 @@ const wss = new WebSocketServer({
   port: 3051,
 });
 
+/**
+ * Represents a room member and its corresponding Websocket client connection.
+ */
 interface RoomMember {
   name: string;
   wsClient: WebSocket;
 }
 
+/**
+ * Represents a room, its connected members and all messages that have been sent
+ * within it.
+ */
 interface Room {
   id: string;
   members: RoomMember[];
   messages: ChatMessage[];
 }
 
+/**
+ * A map that maps room ids to their corresponding Room interfaces.
+ */
 interface RoomMap {
   [id: string]: Room | undefined;
 }
 
 const rooms: RoomMap = {};
 
+/**
+ * Returns a tuple of the room that the given Websocket connect is connected to
+ * as well as its corresponding RoomMember instance. Returns [null, null] if
+ * no such room and member instance is found/
+ *
+ * @param ws The Websocket connection.
+ * @returns A tuple (room, room member).
+ */
 const getConnectedRoom = (ws: WebSocket): [Room | null, RoomMember | null] => {
   for (const roomId in rooms) {
     const room = rooms[roomId]!;
@@ -47,6 +64,14 @@ const getConnectedRoom = (ws: WebSocket): [Room | null, RoomMember | null] => {
   return [null, null];
 };
 
+/**
+ * Returns true if the given name already exists in the given room. If the room
+ * is not found then false is always returned.
+ *
+ * @param roomId The room id.
+ * @param name The name to check.
+ * @returns If the name exists in the room.
+ */
 const nameAlreadyExistsInRoom = (roomId: string, name: string): boolean => {
   const room = rooms[roomId];
 
@@ -60,6 +85,13 @@ const nameAlreadyExistsInRoom = (roomId: string, name: string): boolean => {
   return false;
 };
 
+/**
+ * A callback when a client connection is closed. Handles removing the client
+ * from the room that it was in, if any, and broadcasting any change messages
+ * to the remaining clients in the room.
+ *
+ * @param ws The Websocket connection that was closed.
+ */
 const onClientClose = (ws: WebSocket) => {
   const [connectedRoom] = getConnectedRoom(ws);
   if (!connectedRoom) return;
@@ -86,6 +118,14 @@ const onClientClose = (ws: WebSocket) => {
   }
 };
 
+/**
+ * Called when a Websocket client sends a message to the server. Parses and
+ * handles the corresponding message (joined room, left room, or sent a
+ * message).
+ *
+ * @param messageRaw The raw bytes of the message.
+ * @param ws The Websocket connection that sent the message.
+ */
 const onClientMessage = (messageRaw: RawData, ws: WebSocket) => {
   const messageStr = messageRaw.toString();
   try {
@@ -218,6 +258,13 @@ const onClientMessage = (messageRaw: RawData, ws: WebSocket) => {
   }
 };
 
+/**
+ * A callback that is called whenever a new Websocket client connects to the
+ * Websocket server. Handles adding the appropriate event listeners to the
+ * connection.
+ *
+ * @param ws The Websocket connection that was just established.
+ */
 const onConnection = (ws: WebSocket) => {
   ws.on("message", (m) => onClientMessage(m, ws));
   ws.on("close", () => onClientClose(ws));

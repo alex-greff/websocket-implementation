@@ -3,18 +3,26 @@ import { assert } from "tsafe";
 import "reflect-metadata";
 import { ChatMessage } from "./types";
 
-export type WsMessageType = WsReceivedMessageType | WsSentMessageType;
-
+/**
+ * The type of a received Websocket message.
+ */
 export type WsReceivedMessageType =
   | "room-connect"
   | "room-leave"
   | "send-message";
+
+/**
+ * The type of a sent Websocket message.
+ */
 export type WsSentMessageType =
   | "room-connected"
   | "receive-message"
   | "members-changed"
   | "error";
 
+/**
+ * Base class that represents a Websocket chat message.
+ */
 export class WsMessage {
   public type: string;
 
@@ -34,6 +42,9 @@ export class WsMessage {
   }
 }
 
+/**
+ * Base class that represents a received Websocket chat message.
+ */
 export class WsReceivedMessage extends WsMessage {
   constructor(public type: WsReceivedMessageType) {
     super(type);
@@ -47,6 +58,9 @@ export class WsReceivedMessage extends WsMessage {
   }
 }
 
+/**
+ * Base class that represents a sent Websocket chat message.
+ */
 export class WsSentMessage extends WsMessage {
   constructor(public type: WsSentMessageType) {
     super(type);
@@ -62,6 +76,9 @@ export class WsSentMessage extends WsMessage {
 
 // --- Received Messages ---
 
+/**
+ * Represents a received room connection request message.
+ */
 export class WsRoomConnect extends WsReceivedMessage {
   constructor(public roomId: string, public name: string) {
     super("room-connect");
@@ -76,6 +93,9 @@ export class WsRoomConnect extends WsReceivedMessage {
   }
 }
 
+/**
+ * Represents a received room leave request message.
+ */
 export class WsRoomLeave extends WsReceivedMessage {
   constructor() {
     super("room-leave");
@@ -90,6 +110,9 @@ export class WsRoomLeave extends WsReceivedMessage {
   }
 }
 
+/**
+ * Represents a received message sent by a user.
+ */
 export class WsSendMessage extends WsReceivedMessage {
   constructor(public message: string) {
     super("send-message");
@@ -106,6 +129,9 @@ export class WsSendMessage extends WsReceivedMessage {
 
 // --- Sent Messages ---
 
+/**
+ * Represents a room connection confirmation message.
+ */
 export class WsRoomConnected extends WsSentMessage {
   constructor(
     public roomId: string,
@@ -124,6 +150,9 @@ export class WsRoomConnected extends WsSentMessage {
   }
 }
 
+/**
+ * Represents a chat message sent to the users.
+ */
 export class WsReceiveMessage extends WsSentMessage {
   constructor(public message: string, public name: string) {
     super("receive-message");
@@ -138,6 +167,9 @@ export class WsReceiveMessage extends WsSentMessage {
   }
 }
 
+/**
+ * Represents the event message sent when the connected users list changes.
+ */
 export class WsMembersChanged extends WsSentMessage {
   constructor(public names: string[]) {
     super("members-changed");
@@ -152,6 +184,10 @@ export class WsMembersChanged extends WsSentMessage {
   }
 }
 
+/**
+ * Represents the message sent when a chat application specific
+ * error occurs.
+ */
 export class WsMessageError extends WsSentMessage {
   constructor(public error: string) {
     super("error");
