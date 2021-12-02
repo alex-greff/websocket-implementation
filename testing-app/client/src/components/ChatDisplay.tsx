@@ -3,22 +3,33 @@ import { Box, Flex, VStack, Text } from "@chakra-ui/react";
 import { ChatMessage } from "@/types";
 
 export interface Props {
+  /**
+   * The list of chat messages to display. Ordered from oldest to newest.
+   */
   messages: ChatMessage[];
+  /** The name of the current user. */
   selfName: string;
 }
 
 interface ChatBubbleProps {
+  /**
+   * Chat message to display.
+   */
   message: ChatMessage;
+  /**
+   * Indicates if the chat message is a message the current user sent.
+   */
   fromSelf: boolean;
 }
 
+/**
+ * Component for displaying one chat bubble.
+ */
 const ChatBubble: FunctionComponent<ChatBubbleProps> = (props) => {
   const { message, fromSelf } = props;
 
   return (
-    <Flex 
-      direction="column"
-    >
+    <Flex direction="column">
       <Text alignSelf={fromSelf ? "flex-end" : "flex-start"} fontSize="sm">
         {message.sender}
       </Text>
@@ -28,14 +39,15 @@ const ChatBubble: FunctionComponent<ChatBubbleProps> = (props) => {
         borderRadius="5px"
         bgColor={fromSelf ? "#24AAE7" : "#D1D1D1"}
       >
-        <Text fontSize="md">
-          {message.message}
-        </Text>
+        <Text fontSize="md">{message.message}</Text>
       </Box>
     </Flex>
   );
 };
 
+/**
+ * Component that displays the chat log.
+ */
 export const ChatDisplay: FunctionComponent<Props> = (props) => {
   const { messages, selfName } = props;
 
@@ -45,15 +57,12 @@ export const ChatDisplay: FunctionComponent<Props> = (props) => {
         const fromSelf = message.sender == selfName;
 
         return (
-          <Flex 
+          <Flex
             key={`chat-bubble-${idx}`}
-            width="100%" 
+            width="100%"
             justifyContent={fromSelf ? "flex-end" : "flex-start"}
           >
-            <ChatBubble  
-              message={message}
-              fromSelf={fromSelf}
-            />
+            <ChatBubble message={message} fromSelf={fromSelf} />
           </Flex>
         );
       })}

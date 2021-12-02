@@ -2,7 +2,10 @@ import React, { FunctionComponent } from "react";
 import { Button, Flex, Heading, HStack } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 
-export const HomeView: FunctionComponent = (props) => {
+/**
+ * The component for the home view.
+ */
+export const HomeView: FunctionComponent = () => {
   return (
     <Flex
       direction="column"

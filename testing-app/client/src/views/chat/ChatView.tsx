@@ -32,9 +32,19 @@ import {
 } from "@/models/chat.models";
 import { ChatDisplay } from "@/components/ChatDisplay";
 
+/**
+ * Default input value for the room ID input.
+ */
 const DEFAULT_ROOM_ID = "";
+
+/**
+ * Default input value for the name input.
+ */
 const DEFAULT_NAME = "";
 
+/**
+ * The component for the chat view.
+ */
 export const ChatView: FunctionComponent = () => {
   const isMounted = useMountedState();
   const toast = useToast();

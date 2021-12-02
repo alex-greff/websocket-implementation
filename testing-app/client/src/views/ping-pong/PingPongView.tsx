@@ -5,7 +5,10 @@ import { WebsocketSelector } from "@/components/WebsocketSelector";
 import { WebsocketClient } from "@/types";
 import { assert } from "tsafe";
 
-export const PingPongView: FunctionComponent = (props) => {
+/**
+ * The component for the ping pong view.
+ */
+export const PingPongView: FunctionComponent = () => {
   const toast = useToast();
 
   const [wsClient, setWsClient] = useState<WebsocketClient | null>(null);

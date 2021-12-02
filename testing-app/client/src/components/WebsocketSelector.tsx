@@ -24,10 +24,19 @@ export type WebsocketSelectorOnConnect = (ws: WebsocketClient) => unknown;
 export type WebsocketSelectorOnDisconnect = () => unknown;
 
 export interface Props {
+  /**
+   * Called when the user clicks the connect button.
+   */
   onConnect?: WebsocketSelectorOnConnect;
+  /**
+   * Called when the user clicks the disconnect button.
+   */
   onDisconnect?: WebsocketSelectorOnDisconnect;
 }
 
+/**
+ * Component that handles selecting which Websocket server and client to use.
+ */
 export const WebsocketSelector: FunctionComponent<Props> = (props) => {
   const { onConnect, onDisconnect } = props;
 
@@ -67,7 +76,6 @@ export const WebsocketSelector: FunctionComponent<Props> = (props) => {
   };
 
   const onClickToggleConnect = () => {
-    // TODO: update URL for implemented server
     const serverUrl =
       selectedServer === "implemented-server"
         ? "ws://localhost:3052"
