@@ -22,7 +22,6 @@ const createWindow = (): void => {
         nodeIntegration: true,
         contextIsolation: false,
         enableRemoteModule: true,
-        // webSecurity: false,
       } as any,
     });
 
@@ -47,15 +46,14 @@ const createWindow = (): void => {
           nodeIntegration: true,
           contextIsolation: false,
           enableRemoteModule: true,
-          // webSecurity: false,
         } as any,
       });
 
       // and load the index.html of the app.
       currWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 
-      // Open the DevTools.
-      currWindow.webContents.openDevTools();
+      // Note: DevTools can be opened with:
+      // currWindow.webContents.openDevTools();
     }
   }
 };
