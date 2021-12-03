@@ -12,8 +12,8 @@ Project for CSCD58 (WebSocket client and server)
 
 For this project, we setup a simple chat room app that allows us to demonstrate
 the functionality of our Websocket client and server implementations. The app
-consists of two Websocket servers, one uses our implemented Websocket client
-while the other one uses the `ws` npm package. These servers are connected to by
+consists of two Websocket servers, one uses our implemented Websocket server
+while the other one uses the `ws` npm package. These servers are connected to
 a client that uses Electron which gives a nice interface for interacting with
 the chat room.
 
@@ -46,8 +46,8 @@ Finally, in one more terminal start up the Electron app client:
 
 ```bash
 cd client
-npm install
 npm link:ws-client
+npm install
 npm run start:dev
 # or start `num` windows (between 2 and 4, inclusive)
 npm run start:dev-[num]
