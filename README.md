@@ -46,8 +46,8 @@ Finally, in one more terminal start up the Electron app client:
 
 ```bash
 cd client
-npm link:ws-client
 npm install
+npm link:ws-client
 npm run start:dev
 # or start `num` windows (between 2 and 4, inclusive)
 npm run start:dev-[num]
