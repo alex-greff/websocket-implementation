@@ -92,7 +92,7 @@ export const WebsocketSelector: FunctionComponent<Props> = (props) => {
         onWsConnect(ws);
       });
 
-      ws.on("error", () => {
+      ws.on("error", (err) => {
         toast({
           title: "Unable to connect",
           description: "Unable to connect to Websocket client",

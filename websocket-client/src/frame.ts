@@ -48,7 +48,7 @@ enum PayloadLenLevel {
  */
 enum PayloadLenLevelBits {
   LEVEL0 = 7,
-  LEVEL1 = 32,
+  LEVEL1 = 16,
   LEVEL2 = 64,
 }
 
@@ -460,10 +460,12 @@ export class WebSocketFrame {
     }
 
     // Extract payload and unmask the payload if needed.
-    if (payloadBytesLen * 8 !== bufferRemainingBits)
+    if (payloadBytesLen * 8 !== bufferRemainingBits) {
       throw new WebSocketFrameError(
         "Payload length does not match payload bytes"
       );
+    }
+
     let payloadData: Buffer | undefined = undefined;
     if (payloadBytesLen > 0) {
       payloadData = Buffer.alloc(payloadBytesLen);
