@@ -3,6 +3,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from hashlib import sha1
 import base64
 import struct
+import sys
 import multiprocessing
 from socket import socket as Socket
 # local imports:
@@ -101,6 +102,7 @@ class Server(BaseHTTPRequestHandler):
         # notify the websocket server of a new connection
         # at this point we will enter an infinite loop until this websocket closes
         self.wss._newConnection(socket)
+        sys.exit(0)
 
 
 class WebSocketServer:
@@ -192,6 +194,11 @@ class WebSocketConnection:
         while True:
             # read data from socket into buffer
             wsMsg = self.socket.recv(1024)
+            if not wsMsg:
+                self._sendClose()
+                self.closeHandler(self)
+                self.socket.close()
+                break
             # get data from websocket header
             finFlag = (wsMsg[0] & 0x80) >> 7
             opcode = wsMsg[0] & 0xf
