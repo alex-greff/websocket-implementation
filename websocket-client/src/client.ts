@@ -496,17 +496,20 @@ export class WebSocketClient extends EventEmitter {
    * @param code The close code.
    * @param data Extra payload data.
    */
-  public close(code?: number, data?: string | Buffer): void {
+  public close(
+    code: number = WebSocketFrameCloseReason.normal,
+    data?: string | Buffer
+  ): void {
     // Do nothing if the client is not already open
     if (this.state !== "open") return;
 
     this.state = "closing";
 
+    let dataBuffer: Buffer | undefined;
+    if (Utilities.isStringifiable(data))
+      dataBuffer = Buffer.from(data!.toString(), "utf-8");
+
     // Send close frame
-    this.sendFrame(
-      WebSocketFrameOpcode.conn_close,
-      undefined,
-      WebSocketFrameCloseReason.normal
-    );
+    this.sendFrame(WebSocketFrameOpcode.conn_close, dataBuffer, code);
   }
 }

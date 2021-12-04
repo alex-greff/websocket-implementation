@@ -6,6 +6,7 @@
   "main": ".webpack/main",
   "scripts": {
     "start:dev": "cross-env ELECTRON_ENV=dev ELECTRON_NUM_WINDOWS=1 electron-forge start",
+    "start:dev-1": "cross-env ELECTRON_ENV=dev ELECTRON_NUM_WINDOWS=1 electron-forge start",
     "start:dev-2": "cross-env ELECTRON_ENV=dev ELECTRON_NUM_WINDOWS=2 electron-forge start",
     "start:dev-3": "cross-env ELECTRON_ENV=dev ELECTRON_NUM_WINDOWS=3 electron-forge start",
     "start:dev-4": "cross-env ELECTRON_ENV=dev ELECTRON_NUM_WINDOWS=4 electron-forge start",
