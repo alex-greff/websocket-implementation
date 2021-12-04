@@ -105,34 +105,6 @@ class Server(BaseHTTPRequestHandler):
         sys.exit(0)
 
 
-class WebSocketServer:
-    """
-    Main WebSocket Server class, capable of connecting to multiple clients simultaneously.
-    This server implementation does not currently support handling/sending data across multiple frames
-    using the 0 fin bit
-
-    See more about the WebSocket Protocol here: https://datatracker.ietf.org/doc/html/rfc6455
-    """
-
-    def __init__(self, port, connectionCb):
-        self.connectionCb = connectionCb
-        handler = partial(Server, self)
-        server = ThreadingHTTPServer(('', port), handler)
-        self.server_process = multiprocessing.Process(
-            target=server.serve_forever, args=())
-        self.server_process.start()
-        print('Server serving')
-
-    def _newConnection(self, socket: Socket):
-        newConn = WebSocketConnection(socket)
-        self.connectionCb(newConn)
-        newConn._listen()
-
-    def closeServer(self):
-        if self.server_process:
-            self.server_process.terminate()
-
-
 class WebSocketConnection:
     """
     Stores the socket of a tcp connection, and is used to 
