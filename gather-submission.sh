@@ -18,3 +18,5 @@ rsync -ax testing-app submission \
   --exclude client/node_modules \
   --exclude client/.webpack \
   --exclude server-reference/node_modules
+
+zip -r submission.zip submission
