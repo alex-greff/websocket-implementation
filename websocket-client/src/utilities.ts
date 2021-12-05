@@ -61,6 +61,7 @@ export function intGetByteAt(intVal: number, byteNum: number) {
  * (i.e. has the toString function).
  */
 export function isStringifiable(value: any): boolean {
+  if (value === null || value === undefined) return false;
   return typeof value["toString"] === "function";
 }
 
