@@ -26,9 +26,9 @@ module.exports = {
       {
         devContentSecurityPolicy:
           "default-src * 'unsafe-eval' 'unsafe-inline'; connect-src 'self' ws://localhost:3051/;",
-        mainConfig: "./webpack.main.config.js",
+        mainConfig: "./webpack.electron.main.config.js",
         renderer: {
-          config: "./webpack.renderer.config.js",
+          config: "./webpack.electron.renderer.config.js",
           entryPoints: [
             {
               html: "./electron/index.html",

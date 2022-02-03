@@ -9,16 +9,13 @@
     "start:desktop-2": "cross-env ELECTRON_ENV=dev ELECTRON_NUM_WINDOWS=2 env-cmd -f .env.electron electron-forge start",
     "start:desktop-3": "cross-env ELECTRON_ENV=dev ELECTRON_NUM_WINDOWS=3 env-cmd -f .env.electron electron-forge start",
     "start:desktop-4": "cross-env ELECTRON_ENV=dev ELECTRON_NUM_WINDOWS=4 env-cmd -f .env.electron electron-forge start",
-    "start:web": "cross-env EXTEND_ESLINT=true SKIP_PREFLIGHT_CHECK=true env-cmd -f .env.web react-app-rewired start",
-    "build:web": "cross-env EXTEND_ESLINT=true SKIP_PREFLIGHT_CHECK=true env-cmd -f .env.web react-app-rewired build",
-    "start:web-craco": "cross-env SKIP_PREFLIGHT_CHECK=true env-cmd -f .env.web craco start",
-    "build:web-craco": "cross-env SKIP_PREFLIGHT_CHECK=true env-cmd -f .env.web craco build",
-    "eject": "react-scripts eject",
+    "start:web": "cross-env SKIP_PREFLIGHT_CHECK=true env-cmd -f .env.web craco start",
+    "build:web": "cross-env SKIP_PREFLIGHT_CHECK=true env-cmd -f .env.web craco build",
+    "eject": "carco eject",
     "link:ws-client": "npm link d58-websocket-client"
   },
   "dependencies": {
     "@chakra-ui/react": "^1.6.10",
-    "@craco/craco": "^6.4.3",
     "@emotion/react": "^11.5.0",
     "@emotion/styled": "^11.3.0",
     "@testing-library/jest-dom": "^5.16.1",
@@ -42,6 +39,7 @@
     "ws": "^8.2.3"
   },
   "devDependencies": {
+    "@craco/craco": "^6.4.3",
     "@electron-forge/cli": "6.0.0-beta.61",
     "@electron-forge/maker-deb": "6.0.0-beta.61",
     "@electron-forge/maker-rpm": "6.0.0-beta.61",
@@ -56,11 +54,9 @@
     "@types/react-router-dom": "^5.3.2",
     "@types/ws": "^8.2.0",
     "cross-env": "^7.0.3",
-    "customize-cra": "^1.0.0",
     "env-cmd": "^10.1.0",
     "electron": "15.3.0",
     "node-loader": "^2.0.0",
-    "react-app-rewired": "^2.1.11",
     "sass-loader": "^12.2.0",
     "style-loader": "^3.3.1",
     "ts-loader": "^9.2.6"
