@@ -16,7 +16,7 @@ import {
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import { WebsocketSelector } from "@/components/WebsocketSelector";
-import { ChatMessage, WebsocketClient } from "@/types";
+import { ChatMessage, WebsocketClient } from "@/general-types";
 import { assert } from "tsafe";
 import WebSocket from "ws";
 import { useMountedState } from "react-use";

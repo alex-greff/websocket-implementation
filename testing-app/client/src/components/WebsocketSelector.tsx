@@ -15,7 +15,7 @@ import {
   WebsocketClient,
   WebsocketClientType,
   WebsocketServerType,
-} from "@/types";
+} from "@/general-types";
 import { useMountedState } from "react-use";
 import { WebSocket as WebSocketClientReference } from "ws";
 import { WebSocketClient as WebSocketClientD58 } from "d58-websocket-client";

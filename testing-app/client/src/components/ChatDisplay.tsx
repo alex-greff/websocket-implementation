@@ -1,6 +1,6 @@
 import React, { FunctionComponent } from "react";
 import { Box, Flex, VStack, Text } from "@chakra-ui/react";
-import { ChatMessage } from "@/types";
+import { ChatMessage } from "@/general-types";
 
 export interface Props {
   /**

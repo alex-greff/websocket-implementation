@@ -1,7 +1,7 @@
 import { plainToClass, serialize } from "class-transformer";
 import { assert } from "tsafe";
 import "reflect-metadata";
-import { ChatMessage } from "@/types";
+import { ChatMessage } from "@/general-types";
 
 /**
  * The type of a sent Websocket message.
@@ -23,7 +23,7 @@ export type WsReceivedMessageType =
 export class WsMessage {
   constructor(public type: string) {}
 
-  static fromJson(dataJson: any): WsMessage {
+  static fromJson(dataJson: unknown): WsMessage {
     const messageBase = plainToClass(WsMessage, dataJson, {
       excludeExtraneousValues: false,
     });
@@ -43,7 +43,7 @@ export class WsReceivedMessage extends WsMessage {
     super(type);
   }
 
-  static fromJson(dataJson: any): WsReceivedMessage {
+  static fromJson(dataJson: unknown): WsReceivedMessage {
     const messageBase = plainToClass(WsReceivedMessage, dataJson, {
       excludeExtraneousValues: false,
     });
@@ -59,7 +59,7 @@ export class WsSentMessage extends WsMessage {
     super(type);
   }
 
-  static fromJson(dataJson: any): WsSentMessage {
+  static fromJson(dataJson: unknown): WsSentMessage {
     const messageBase = plainToClass(WsSentMessage, dataJson, {
       excludeExtraneousValues: false,
     });
@@ -77,7 +77,7 @@ export class WsRoomConnect extends WsSentMessage {
     super("room-connect");
   }
 
-  static fromJson(dataJson: any): WsRoomConnect {
+  static fromJson(dataJson: unknown): WsRoomConnect {
     const message = plainToClass(WsRoomConnect, dataJson, {
       excludeExtraneousValues: false,
     });
@@ -94,7 +94,7 @@ export class WsRoomLeave extends WsSentMessage {
     super("room-leave");
   }
 
-  static fromJson(dataJson: any): WsRoomLeave {
+  static fromJson(dataJson: unknown): WsRoomLeave {
     const message = plainToClass(WsRoomLeave, dataJson, {
       excludeExtraneousValues: false,
     });
@@ -111,7 +111,7 @@ export class WsSendMessage extends WsSentMessage {
     super("send-message");
   }
 
-  static fromJson(dataJson: any): WsSendMessage {
+  static fromJson(dataJson: unknown): WsSendMessage {
     const message = plainToClass(WsSendMessage, dataJson, {
       excludeExtraneousValues: false,
     });
@@ -134,7 +134,7 @@ export class WsRoomConnected extends WsReceivedMessage {
     super("room-connected");
   }
 
-  static fromJson(dataJson: any): WsRoomConnected {
+  static fromJson(dataJson: unknown): WsRoomConnected {
     const message = plainToClass(WsRoomConnected, dataJson, {
       excludeExtraneousValues: false,
     });
@@ -151,7 +151,7 @@ export class WsReceiveMessage extends WsReceivedMessage {
     super("receive-message");
   }
 
-  static fromJson(dataJson: any): WsReceiveMessage {
+  static fromJson(dataJson: unknown): WsReceiveMessage {
     const message = plainToClass(WsReceiveMessage, dataJson, {
       excludeExtraneousValues: false,
     });
@@ -168,7 +168,7 @@ export class WsMembersChanged extends WsReceivedMessage {
     super("members-changed");
   }
 
-  static fromJson(dataJson: any): WsMembersChanged {
+  static fromJson(dataJson: unknown): WsMembersChanged {
     const message = plainToClass(WsMembersChanged, dataJson, {
       excludeExtraneousValues: false,
     });
@@ -186,7 +186,7 @@ export class WsMessageError extends WsReceivedMessage {
     super("error");
   }
 
-  static fromJson(dataJson: any): WsMessageError {
+  static fromJson(dataJson: unknown): WsMessageError {
     const message = plainToClass(WsMessageError, dataJson, {
       excludeExtraneousValues: false,
     });

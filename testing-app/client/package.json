@@ -1,108 +1,29 @@
 {
   "name": "client",
-  "productName": "client",
-  "version": "1.0.0",
-  "description": "My Electron application description",
+  "version": "0.1.0",
+  "private": true,
   "main": ".webpack/main",
   "scripts": {
-    "start:dev": "cross-env ELECTRON_ENV=dev ELECTRON_NUM_WINDOWS=1 electron-forge start",
-    "start:dev-1": "cross-env ELECTRON_ENV=dev ELECTRON_NUM_WINDOWS=1 electron-forge start",
-    "start:dev-2": "cross-env ELECTRON_ENV=dev ELECTRON_NUM_WINDOWS=2 electron-forge start",
-    "start:dev-3": "cross-env ELECTRON_ENV=dev ELECTRON_NUM_WINDOWS=3 electron-forge start",
-    "start:dev-4": "cross-env ELECTRON_ENV=dev ELECTRON_NUM_WINDOWS=4 electron-forge start",
-    "package": "cross-env ELECTRON_ENV=production electron-forge package",
-    "make": "cross-env ELECTRON_ENV=production electron-forge make",
-    "publish": "electron-forge publish",
-    "lint": "eslint --ext .ts,.tsx .",
+    "start:desktop": "cross-env ELECTRON_ENV=dev ELECTRON_NUM_WINDOWS=1 env-cmd -f .env.electron electron-forge start",
+    "start:desktop-1": "cross-env ELECTRON_ENV=dev ELECTRON_NUM_WINDOWS=1 env-cmd -f .env.electron electron-forge start",
+    "start:desktop-2": "cross-env ELECTRON_ENV=dev ELECTRON_NUM_WINDOWS=2 env-cmd -f .env.electron electron-forge start",
+    "start:desktop-3": "cross-env ELECTRON_ENV=dev ELECTRON_NUM_WINDOWS=3 env-cmd -f .env.electron electron-forge start",
+    "start:desktop-4": "cross-env ELECTRON_ENV=dev ELECTRON_NUM_WINDOWS=4 env-cmd -f .env.electron electron-forge start",
+    "start:web": "cross-env EXTEND_ESLINT=true SKIP_PREFLIGHT_CHECK=true env-cmd -f .env.web react-app-rewired start",
+    "build:web": "cross-env EXTEND_ESLINT=true SKIP_PREFLIGHT_CHECK=true env-cmd -f .env.web react-app-rewired build",
+    "start:web-craco": "cross-env SKIP_PREFLIGHT_CHECK=true env-cmd -f .env.web craco start",
+    "build:web-craco": "cross-env SKIP_PREFLIGHT_CHECK=true env-cmd -f .env.web craco build",
+    "eject": "react-scripts eject",
     "link:ws-client": "npm link d58-websocket-client"
-  },
-  "keywords": [],
-  "author": {
-    "name": "alex-greff",
-    "email": "alex.j.greff@gmail.com"
-  },
-  "license": "MIT",
-  "config": {
-    "forge": {
-      "packagerConfig": {},
-      "makers": [
-        {
-          "name": "@electron-forge/maker-squirrel",
-          "config": {
-            "name": "client"
-          }
-        },
-        {
-          "name": "@electron-forge/maker-zip",
-          "platforms": [
-            "darwin"
-          ]
-        },
-        {
-          "name": "@electron-forge/maker-deb",
-          "config": {}
-        },
-        {
-          "name": "@electron-forge/maker-rpm",
-          "config": {}
-        }
-      ],
-      "plugins": [
-        [
-          "@electron-forge/plugin-webpack",
-          {
-            "devContentSecurityPolicy": "default-src * 'unsafe-eval' 'unsafe-inline'; connect-src 'self' ws://localhost:3051/;",
-            "mainConfig": "./webpack.main.config.js",
-            "renderer": {
-              "config": "./webpack.renderer.config.js",
-              "entryPoints": [
-                {
-                  "html": "./src/index.html",
-                  "js": "./src/renderer.ts",
-                  "name": "main_window"
-                },
-                {
-                  "html": "./src/index.html",
-                  "js": "./src/renderer.ts",
-                  "name": "second_window"
-                }
-              ]
-            }
-          }
-        ]
-      ]
-    }
-  },
-  "devDependencies": {
-    "@electron-forge/cli": "^6.0.0-beta.61",
-    "@electron-forge/maker-deb": "^6.0.0-beta.61",
-    "@electron-forge/maker-rpm": "^6.0.0-beta.61",
-    "@electron-forge/maker-squirrel": "^6.0.0-beta.61",
-    "@electron-forge/maker-zip": "^6.0.0-beta.61",
-    "@electron-forge/plugin-webpack": "^6.0.0-beta.61",
-    "@types/react": "^17.0.33",
-    "@types/react-dom": "^17.0.10",
-    "@types/react-router-dom": "^5.3.2",
-    "@typescript-eslint/eslint-plugin": "^4.33.0",
-    "@typescript-eslint/parser": "^4.33.0",
-    "@vercel/webpack-asset-relocator-loader": "^1.7.0",
-    "cross-env": "^7.0.3",
-    "css-loader": "^6.4.0",
-    "electron": "15.3.0",
-    "eslint": "^7.32.0",
-    "eslint-plugin-import": "^2.25.2",
-    "fork-ts-checker-webpack-plugin": "^6.4.0",
-    "node-loader": "^2.0.0",
-    "sass-loader": "^12.2.0",
-    "style-loader": "^3.3.1",
-    "ts-loader": "^9.2.6",
-    "typescript": "^4.4.4"
   },
   "dependencies": {
     "@chakra-ui/react": "^1.6.10",
+    "@craco/craco": "^6.4.3",
     "@emotion/react": "^11.5.0",
     "@emotion/styled": "^11.3.0",
-    "@types/ws": "^8.2.0",
+    "@testing-library/jest-dom": "^5.16.1",
+    "@testing-library/react": "^12.1.2",
+    "@testing-library/user-event": "^13.5.0",
     "bufferutil": "^4.0.5",
     "class-transformer": "^0.4.0",
     "electron-squirrel-startup": "^1.0.0",
@@ -110,11 +31,62 @@
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-router-dom": "^5.3.0",
+    "react-scripts": "4.0.3",
     "react-use": "^17.3.1",
     "reflect-metadata": "^0.1.13",
     "sass": "^1.43.3",
     "tsafe": "^0.8.1",
+    "typescript": "^4.5.5",
     "utf-8-validate": "^5.0.7",
+    "webpack": "5.60.0",
     "ws": "^8.2.3"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "6.0.0-beta.61",
+    "@electron-forge/maker-deb": "6.0.0-beta.61",
+    "@electron-forge/maker-rpm": "6.0.0-beta.61",
+    "@electron-forge/maker-squirrel": "6.0.0-beta.61",
+    "@electron-forge/maker-zip": "6.0.0-beta.61",
+    "@electron-forge/plugin-webpack": "6.0.0-beta.61",
+    "@vercel/webpack-asset-relocator-loader": "^1.7.0",
+    "@types/jest": "^27.4.0",
+    "@types/node": "^16.11.22",
+    "@types/react": "^17.0.38",
+    "@types/react-dom": "^17.0.11",
+    "@types/react-router-dom": "^5.3.2",
+    "@types/ws": "^8.2.0",
+    "cross-env": "^7.0.3",
+    "customize-cra": "^1.0.0",
+    "env-cmd": "^10.1.0",
+    "electron": "15.3.0",
+    "node-loader": "^2.0.0",
+    "react-app-rewired": "^2.1.11",
+    "sass-loader": "^12.2.0",
+    "style-loader": "^3.3.1",
+    "ts-loader": "^9.2.6"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browser": {
+    "ws": false,
+    "bufferutil": false,
+    "utf-8-validate": false,
+    "electron-squirrel-startup": false
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }

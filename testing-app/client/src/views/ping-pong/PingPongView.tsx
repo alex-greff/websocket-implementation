@@ -2,7 +2,7 @@ import React, { FunctionComponent, useMemo, useState } from "react";
 import { Box, Button, Flex, Heading, Text, useToast } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import { WebsocketSelector } from "@/components/WebsocketSelector";
-import { WebsocketClient } from "@/types";
+import { WebsocketClient } from "@/general-types";
 import { assert } from "tsafe";
 
 /**
