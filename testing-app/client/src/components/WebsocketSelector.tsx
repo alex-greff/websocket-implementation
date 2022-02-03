@@ -20,6 +20,7 @@ import { useMountedState } from "react-use";
 import { WebSocket as WebSocketClientReference } from "ws";
 import { WebSocketClient as WebSocketClientD58 } from "d58-websocket-client";
 import isElectron from "is-electron";
+import Keys from "@/keys";
 
 export type WebsocketSelectorOnConnect = (ws: WebsocketClient) => unknown;
 export type WebsocketSelectorOnDisconnect = () => unknown;
@@ -80,8 +81,8 @@ export const WebsocketSelector: FunctionComponent<Props> = (props) => {
   const onClickToggleConnect = () => {
     const serverUrl =
       selectedServer === "implemented-server"
-        ? "ws://localhost:3052"
-        : "ws://localhost:3051";
+        ? Keys.IMPLEMENTED_SERVER_URL
+        : Keys.REFERENCE_SERVER_URL;
 
     // Connect to new websocket client
     if (!connected) {
@@ -89,8 +90,8 @@ export const WebsocketSelector: FunctionComponent<Props> = (props) => {
       if (isElectron()) {
         const ws =
           selectedClient === "reference-client"
-          ? new WebSocketClientReference(serverUrl)
-          : new WebSocketClientD58(serverUrl);
+            ? new WebSocketClientReference(serverUrl)
+            : new WebSocketClientD58(serverUrl);
 
         ws.on("open", () => {
           onWsConnect(ws);
@@ -111,7 +112,7 @@ export const WebsocketSelector: FunctionComponent<Props> = (props) => {
         ws.on("close", () => {
           onWsDisconnect();
         });
-      } 
+      }
       // On browser
       else {
         const ws = new WebSocket(serverUrl);
@@ -135,7 +136,7 @@ export const WebsocketSelector: FunctionComponent<Props> = (props) => {
         ws.addEventListener("close", () => {
           onWsDisconnect();
         });
-      }      
+      }
     }
     // Disconnect from currently connected websocket client
     else {

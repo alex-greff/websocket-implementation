@@ -24,6 +24,7 @@ module.exports = {
     [
       "@electron-forge/plugin-webpack",
       {
+        // TODO: add the deployed server's URL here too
         devContentSecurityPolicy:
           "default-src * 'unsafe-eval' 'unsafe-inline'; connect-src 'self' ws://localhost:3051/;",
         mainConfig: "./webpack.electron.main.config.js",
