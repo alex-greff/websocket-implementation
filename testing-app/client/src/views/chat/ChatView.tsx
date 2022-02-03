@@ -257,9 +257,13 @@ export const ChatView: FunctionComponent = () => {
       <Box height="2"></Box>
 
       <Flex
-        direction="row"
+        // direction="row"
+        direction={{ base: "column", md: "row" }}
+        alignItems="center"
         justifyContent="space-evenly"
         width="100%"
+        gap="4"
+        maxWidth="50rem"
         paddingRight="2"
         paddingLeft="2"
       >
@@ -267,8 +271,6 @@ export const ChatView: FunctionComponent = () => {
           onConnect={onWsConnect}
           onDisconnect={onWsDisconnect}
         />
-
-        <Box width="4"></Box>
 
         {/* Room join inputs */}
         <form
