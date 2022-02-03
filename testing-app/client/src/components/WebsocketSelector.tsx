@@ -19,6 +19,7 @@ import {
 import { useMountedState } from "react-use";
 import { WebSocket as WebSocketClientReference } from "ws";
 import { WebSocketClient as WebSocketClientD58 } from "d58-websocket-client";
+import isElectron from "is-electron";
 
 export type WebsocketSelectorOnConnect = (ws: WebsocketClient) => unknown;
 export type WebsocketSelectorOnDisconnect = () => unknown;
@@ -46,8 +47,9 @@ export const WebsocketSelector: FunctionComponent<Props> = (props) => {
 
   const [selectedServer, setSelectedServer] =
     useState<WebsocketServerType>("implemented-server");
-  const [selectedClient, setSelectedClient] =
-    useState<WebsocketClientType>("implemented-client");
+  const [selectedClient, setSelectedClient] = useState<WebsocketClientType>(
+    isElectron() ? "implemented-client" : "reference-client"
+  );
 
   const [connected, setConnected] = useState(false);
   const [wsClient, setWsClient] = useState<WebsocketClient | null>(null);
@@ -83,30 +85,57 @@ export const WebsocketSelector: FunctionComponent<Props> = (props) => {
 
     // Connect to new websocket client
     if (!connected) {
-      const ws =
-        selectedClient === "reference-client"
+      // On Electron
+      if (isElectron()) {
+        const ws =
+          selectedClient === "reference-client"
           ? new WebSocketClientReference(serverUrl)
           : new WebSocketClientD58(serverUrl);
 
-      ws.on("open", () => {
-        onWsConnect(ws);
-      });
-
-      ws.on("error", (err) => {
-        toast({
-          title: "Unable to connect",
-          description: "Unable to connect to Websocket client",
-          duration: 3000,
-          status: "error",
-          isClosable: true,
+        ws.on("open", () => {
+          onWsConnect(ws);
         });
 
-        onWsDisconnect();
-      });
+        ws.on("error", (err) => {
+          toast({
+            title: "Unable to connect",
+            description: "Unable to connect to Websocket client",
+            duration: 3000,
+            status: "error",
+            isClosable: true,
+          });
 
-      ws.on("close", () => {
-        onWsDisconnect();
-      });
+          onWsDisconnect();
+        });
+
+        ws.on("close", () => {
+          onWsDisconnect();
+        });
+      } 
+      // On browser
+      else {
+        const ws = new WebSocket(serverUrl);
+
+        ws.addEventListener("open", () => {
+          onWsConnect(ws);
+        });
+
+        ws.addEventListener("error", (err) => {
+          toast({
+            title: "Unable to connect",
+            description: "Unable to connect to Websocket client",
+            duration: 3000,
+            status: "error",
+            isClosable: true,
+          });
+
+          onWsDisconnect();
+        });
+
+        ws.addEventListener("close", () => {
+          onWsDisconnect();
+        });
+      }      
     }
     // Disconnect from currently connected websocket client
     else {
@@ -164,7 +193,9 @@ export const WebsocketSelector: FunctionComponent<Props> = (props) => {
             onChange={onClientChange}
           >
             <HStack spacing="24px">
-              <Radio value="implemented-client">Implemented</Radio>
+              <Radio value="implemented-client" isDisabled={!isElectron()}>
+                Implemented
+              </Radio>
               <Radio value="reference-client">Reference</Radio>
             </HStack>
           </RadioGroup>

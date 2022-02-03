@@ -2,11 +2,14 @@ import React, { FunctionComponent, useMemo, useState } from "react";
 import { Box, Button, Flex, Heading, Text, useToast } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import { WebsocketSelector } from "@/components/WebsocketSelector";
-import { WebsocketClient } from "@/general-types";
-import { assert } from "tsafe";
+import { WebsocketClient, WebsocketClientElectron } from "@/general-types";
+import { assert, is } from "tsafe";
+import isElectron from "is-electron";
 
 /**
  * The component for the ping pong view.
+ * Note: this component is only supported in Electron because the browser
+ * Websocket client does not allow for ping frames to be sent.
  */
 export const PingPongView: FunctionComponent = () => {
   const toast = useToast();
@@ -15,6 +18,7 @@ export const PingPongView: FunctionComponent = () => {
   const connected = useMemo(() => wsClient !== null, [wsClient]);
 
   const onWsConnect = (ws: WebsocketClient) => {
+    assert(is<WebsocketClientElectron>(ws));
     ws.on("pong", () => {
       toast({
         title: "Pong",
@@ -33,8 +37,29 @@ export const PingPongView: FunctionComponent = () => {
 
   const ping = () => {
     assert(wsClient !== null);
+    assert(is<WebsocketClientElectron>(wsClient));
     wsClient.ping();
   };
+
+  if (!isElectron()) {
+    return (
+      <Flex
+        direction="column"
+        height="100%"
+        alignItems="center"
+        justifyContent="center"
+      >
+        <Heading>Ping-Pong</Heading>
+        <Text maxWidth="25rem" textAlign="center">
+          Unfortunately sending/receiving ping and pong frames is not supported
+          in the browser.
+        </Text>
+        <Button as={Link} to="/">
+          Home
+        </Button>
+      </Flex>
+    );
+  }
 
   return (
     <Flex direction="column" height="100%" alignItems="center">

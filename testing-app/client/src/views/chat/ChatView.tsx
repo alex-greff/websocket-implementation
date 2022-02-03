@@ -16,8 +16,8 @@ import {
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import { WebsocketSelector } from "@/components/WebsocketSelector";
-import { ChatMessage, WebsocketClient } from "@/general-types";
-import { assert } from "tsafe";
+import { ChatMessage, WebsocketClient, WebsocketClientBrowser, WebsocketClientElectron } from "@/general-types";
+import { assert, is } from "tsafe";
 import WebSocket from "ws";
 import { useMountedState } from "react-use";
 import {
@@ -31,6 +31,7 @@ import {
   WsSendMessage,
 } from "@/models/chat.models";
 import { ChatDisplay } from "@/components/ChatDisplay";
+import isElectron from "is-electron";
 
 /**
  * Default input value for the room ID input.
@@ -151,7 +152,14 @@ export const ChatView: FunctionComponent = () => {
           assert(wsClient !== null);
           // Note: see reasoning in roomDisconnect for why we do this instead of
           // wsClient.off("message", ...)
-          wsClient.removeAllListeners("message");
+          if (isElectron()) {
+            assert(is<WebsocketClientElectron>(wsClient));
+            wsClient.removeAllListeners("message");
+          } else {
+            assert(is<WebsocketClientBrowser>(wsClient));
+            wsClient.onmessage = null;
+          }
+          
         }
       }
     } catch (err) {
@@ -163,7 +171,14 @@ export const ChatView: FunctionComponent = () => {
     assert(wsClient !== null);
 
     // Setup message listener
-    wsClient.on("message", onRoomMessage);
+    if (isElectron()) {
+      assert(is<WebsocketClientElectron>(wsClient));
+      wsClient.on("message", onRoomMessage);
+    } else {
+      assert(is<WebsocketClientBrowser>(wsClient));
+      wsClient.addEventListener("message", (e) => onRoomMessage(e.data));
+    }
+    
 
     // Send the join room message
     const connectMessage = new WsRoomConnect(roomId, name);
@@ -182,7 +197,13 @@ export const ChatView: FunctionComponent = () => {
       // because onRoomMessage changes with each rerender and fixing this
       // with useCallback caused other issues. So since no other event listeners
       // are on "message", we can just do this here
-      wsClient.removeAllListeners("message");
+      if (isElectron()) {
+        assert(is<WebsocketClientElectron>(wsClient));
+        wsClient.removeAllListeners("message");
+      } else {
+        assert(is<WebsocketClientBrowser>(wsClient));
+        wsClient.onmessage = null;
+      }
     }
 
     setIsRoomConnected(() => false);

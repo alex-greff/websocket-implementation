@@ -12,10 +12,19 @@ export type WebsocketServerType = "implemented-server" | "reference-server";
 export type WebsocketClientType = "implemented-client" | "reference-client";
 
 /**
- * Union type to represent either the reference Websocket client or our
- * implemented Websocket client.
+ * Websocket client when we are running on Electron.
  */
-export type WebsocketClient = WebsocketClientReference | WebSocketClientD58;
+export type WebsocketClientElectron = WebsocketClientReference | WebSocketClientD58;
+
+/**
+ * Websocket client when we are running on the browser.
+ */
+export type WebsocketClientBrowser = WebSocket;
+
+/**
+ * The possible Websocket client types that we can have.
+ */
+export type WebsocketClient = WebsocketClientElectron | WebsocketClientBrowser;
 
 /**
  * Represents a chat message.
