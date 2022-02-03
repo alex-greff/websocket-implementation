@@ -2,7 +2,8 @@
   "compilerOptions": {
     "declaration": true,
     "allowJs": true,
-    "module": "commonjs",
+    "target": "es5",
+    "module": "es6",
     "skipLibCheck": true,
     "esModuleInterop": true,
     "noImplicitAny": true,
@@ -15,7 +16,6 @@
       "*": ["node_modules/*"],
     },
     "strictNullChecks": true,
-    "target": "ES2017",
   },
   "include": [
     "src/**/*"

@@ -2,16 +2,23 @@
   "name": "d58-websocket-client",
   "version": "1.0.0",
   "description": "Our websocket client implementation",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
+  "module": "dist/index.es.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc",
+    "build": "rollup -c",
     "create:link": "npm link"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^16.11.8",
+    "rollup": "^2.67.0",
+    "rollup-plugin-typescript2": "^0.31.2",
     "typescript": "^4.5.2"
   },
   "dependencies": {
