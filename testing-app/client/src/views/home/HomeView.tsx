@@ -1,6 +1,8 @@
 import React, { FunctionComponent } from "react";
-import { Button, Flex, Heading, HStack } from "@chakra-ui/react";
+import { Box, Button, Flex, Heading, HStack } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
+import isElectron from "is-electron";
+import { BrowserAlert } from "@/components/BrowserAlert";
 
 /**
  * The component for the home view.
@@ -13,6 +15,8 @@ export const HomeView: FunctionComponent = () => {
       height="100%"
       justifyContent="center"
     >
+      {!isElectron() && <Box width="100%" marginBottom="5"><BrowserAlert /></Box>}
+
       <Heading>Choose Test Example</Heading>
 
       <HStack spacing="3">

@@ -2,3 +2,9 @@ html, body, #root {
   width: 100%;
   height: 100%;
 }
+
+// A hack to avoid the iframe dev server injection erroring out sometimes
+// Source: https://stackoverflow.com/a/70452191
+iframe {
+  display: none !important;
+}
