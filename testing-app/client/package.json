@@ -17,9 +17,10 @@
     "start:prod-desktop-4": "cross-env ELECTRON_ENV=dev ELECTRON_NUM_WINDOWS=4 env-cmd -f .env.production electron-forge start",
     "start:prod-web": "cross-env SKIP_PREFLIGHT_CHECK=true PORT=3001 env-cmd -f .env.production craco start",
     "build:prod-web": "cross-env SKIP_PREFLIGHT_CHECK=true env-cmd -f .env.production craco build",
+    "link-and-build:prod-web": "npm run link:ws-client; cross-env SKIP_PREFLIGHT_CHECK=true env-cmd -f .env.production craco build",
     "temp": "cross-env SKIP_PREFLIGHT_CHECK=false env-cmd -f .env.production craco build",
     "eject": "carco eject",
-    "link:ws-client": "npm link d58-websocket-client"
+    "link:ws-client": "cd ../../websocket-client; npm run create:link; cd testing-app/client; npm link d58-websocket-client"
   },
   "dependencies": {
     "@chakra-ui/react": "^1.6.10",
