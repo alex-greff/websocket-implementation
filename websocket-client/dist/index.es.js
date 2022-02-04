@@ -1,5 +1,5 @@
 import EventEmitter from 'events';
-import http from 'http';
+import https from 'https';
 import { URL } from 'url';
 import crypto from 'crypto';
 import { assert } from 'tsafe';
@@ -627,18 +627,20 @@ var WebSocketFrame = /** @class */ (function () {
 /**
  * List of valid protocol prefixes supported.
  */
-var VALID_PROTOCOLS = ["ws:"];
+var VALID_PROTOCOLS = ["ws:", "wss:"];
 /**
  * Maps default port to each supported Websocket protocol.
  */
 var DEFAULT_PORTS = {
     "ws:": 80,
+    "wss:": 443,
 };
 /**
  * Maps the websocket protocol to its corresponding HTTP upgrade protocol.
  */
 var WS_PROTO_TO_UPGRADE_PROTO = {
     "ws:": "http:",
+    "wss:": "https:",
 };
 /**
  * The length (in bytes) of the Websocket secret nonce.
@@ -751,7 +753,7 @@ var WebSocketClient = /** @class */ (function (_super) {
         var _this = this;
         var nonce = crypto.randomBytes(WS_SECRET_KEY_NONCE_SIZE);
         var nonceB64 = nonce.toString("base64");
-        var req = http.get({
+        var req = https.get({
             headers: {
                 Connection: "Upgrade",
                 Upgrade: "websocket",

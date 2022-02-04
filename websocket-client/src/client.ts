@@ -1,5 +1,6 @@
 import EventEmitter from "events";
 import http from "http";
+import https from "https";
 import { URL } from "url";
 import {
   WebSocketInitializationError,
@@ -25,13 +26,14 @@ type WebSocketConnectionState = "connecting" | "open" | "closing" | "closed";
 /**
  * List of valid protocol prefixes supported.
  */
-const VALID_PROTOCOLS: string[] = ["ws:"];
+const VALID_PROTOCOLS: string[] = ["ws:", "wss:"];
 
 /**
  * Maps default port to each supported Websocket protocol.
  */
 const DEFAULT_PORTS: { [p: string]: number } = {
   "ws:": 80,
+  "wss:": 443,
 };
 
 /**
@@ -39,6 +41,7 @@ const DEFAULT_PORTS: { [p: string]: number } = {
  */
 const WS_PROTO_TO_UPGRADE_PROTO: { [ws: string]: string } = {
   "ws:": "http:",
+  "wss:": "https:",
 };
 
 /**
@@ -241,7 +244,7 @@ export class WebSocketClient extends EventEmitter {
     const nonce = crypto.randomBytes(WS_SECRET_KEY_NONCE_SIZE);
     const nonceB64 = nonce.toString("base64");
 
-    const req = http.get({
+    const req = https.get({
       headers: {
         Connection: "Upgrade",
         Upgrade: "websocket",

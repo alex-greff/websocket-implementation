@@ -3,7 +3,7 @@
 Object.defineProperty(exports, '__esModule', { value: true });
 
 var EventEmitter = require('events');
-var http = require('http');
+var https = require('https');
 var url = require('url');
 var crypto = require('crypto');
 var tsafe = require('tsafe');
@@ -12,7 +12,7 @@ var bitBuffer = require('bit-buffer');
 function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
 
 var EventEmitter__default = /*#__PURE__*/_interopDefaultLegacy(EventEmitter);
-var http__default = /*#__PURE__*/_interopDefaultLegacy(http);
+var https__default = /*#__PURE__*/_interopDefaultLegacy(https);
 var crypto__default = /*#__PURE__*/_interopDefaultLegacy(crypto);
 
 /*! *****************************************************************************
@@ -637,18 +637,20 @@ var WebSocketFrame = /** @class */ (function () {
 /**
  * List of valid protocol prefixes supported.
  */
-var VALID_PROTOCOLS = ["ws:"];
+var VALID_PROTOCOLS = ["ws:", "wss:"];
 /**
  * Maps default port to each supported Websocket protocol.
  */
 var DEFAULT_PORTS = {
     "ws:": 80,
+    "wss:": 443,
 };
 /**
  * Maps the websocket protocol to its corresponding HTTP upgrade protocol.
  */
 var WS_PROTO_TO_UPGRADE_PROTO = {
     "ws:": "http:",
+    "wss:": "https:",
 };
 /**
  * The length (in bytes) of the Websocket secret nonce.
@@ -761,7 +763,7 @@ var WebSocketClient = /** @class */ (function (_super) {
         var _this = this;
         var nonce = crypto__default["default"].randomBytes(WS_SECRET_KEY_NONCE_SIZE);
         var nonceB64 = nonce.toString("base64");
-        var req = http__default["default"].get({
+        var req = https__default["default"].get({
             headers: {
                 Connection: "Upgrade",
                 Upgrade: "websocket",
