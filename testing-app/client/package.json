@@ -19,7 +19,7 @@
     "build:prod-web": "cross-env SKIP_PREFLIGHT_CHECK=true env-cmd -f .env.production craco build",
     "link-and-build:prod-web": "npm run link:ws-client; cross-env SKIP_PREFLIGHT_CHECK=true env-cmd -f .env.production craco build",
     "eject": "carco eject",
-    "link:ws-client": "cd ../../websocket-client; npm run create:link; cd ../testing-app/client; npm link d58-websocket-client"
+    "link:ws-client": "cd ../../websocket-client; npm i; npm run create:link; cd ../testing-app/client; npm link d58-websocket-client"
   },
   "dependencies": {
     "@chakra-ui/react": "^1.6.10",
