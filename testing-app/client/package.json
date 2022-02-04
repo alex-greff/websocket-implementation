@@ -18,7 +18,6 @@
     "start:prod-web": "cross-env SKIP_PREFLIGHT_CHECK=true PORT=3001 env-cmd -f .env.production craco start",
     "build:prod-web": "cross-env SKIP_PREFLIGHT_CHECK=true env-cmd -f .env.production craco build",
     "link-and-build:prod-web": "npm run link:ws-client; cross-env SKIP_PREFLIGHT_CHECK=true env-cmd -f .env.production craco build",
-    "temp": "cross-env SKIP_PREFLIGHT_CHECK=false env-cmd -f .env.production craco build",
     "eject": "carco eject",
     "link:ws-client": "cd ../../websocket-client; npm run create:link; cd ../testing-app/client; npm link d58-websocket-client"
   },
@@ -82,7 +81,8 @@
     "ws": false,
     "bufferutil": false,
     "utf-8-validate": false,
-    "electron-squirrel-startup": false
+    "electron-squirrel-startup": false,
+    "bit-buffer": false
   },
   "browserslist": {
     "production": [
