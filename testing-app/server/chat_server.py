@@ -1,9 +1,12 @@
 import sys
+import os
 from typing import Dict, List, Tuple, Union
 sys.path.append('../../websocket-server')
+sys.path.append('./dist')
 import json
 from WebSocketServer import WebSocketConnection, WebSocketServer
 import threading
+
 
 
 class Room:
@@ -190,5 +193,9 @@ def onMessage(text: Union[str, bytes], ws: WebSocketConnection):
             ws.send(json.dumps(errorMsg))
             return
     
+def get_port() -> int:
+    if os.environ.get("PORT", None) is not None:
+        return int(os.environ.get("PORT", None))
+    return 3052
 
-wss = WebSocketServer(3052, connectionHandler)
+wss = WebSocketServer(get_port(), connectionHandler)

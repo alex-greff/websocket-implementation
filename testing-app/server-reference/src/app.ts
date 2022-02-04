@@ -14,7 +14,7 @@ import { assert } from "tsafe";
 import { ChatMessage } from "./types";
 
 const wss = new WebSocketServer({
-  port: 3051,
+  port: (process.env.PORT ? parseInt(process.env.PORT) : undefined) || 3051,
 });
 
 /**

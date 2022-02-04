@@ -1,0 +1,26 @@
+#!/bin/bash
+
+function copy-dist-files() {
+  mkdir -p dist;
+  cp -r ../../websocket-server/* ./dist;
+}
+
+function start() {
+  copy-dist-files;
+  python3 chat_server.py;
+}
+
+function heroku:push() {
+  copy-dist-files;
+  heroku container:push web --app=websocket-implemented-server;
+}
+
+function heroku:release() {
+  heroku container:release web --app=websocket-implemented-server;
+}
+
+function heroku:logs() {
+  heroku logs --tail -a websocket-implemented-server;
+}
+
+eval "$@"
