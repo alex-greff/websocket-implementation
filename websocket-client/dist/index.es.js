@@ -632,7 +632,7 @@ var VALID_PROTOCOLS = ["ws:"];
  * Maps default port to each supported Websocket protocol.
  */
 var DEFAULT_PORTS = {
-    ws: 80,
+    "ws:": 80,
 };
 /**
  * Maps the websocket protocol to its corresponding HTTP upgrade protocol.

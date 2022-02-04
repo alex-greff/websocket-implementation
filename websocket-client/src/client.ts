@@ -31,7 +31,7 @@ const VALID_PROTOCOLS: string[] = ["ws:"];
  * Maps default port to each supported Websocket protocol.
  */
 const DEFAULT_PORTS: { [p: string]: number } = {
-  ws: 80,
+  "ws:": 80,
 };
 
 /**
