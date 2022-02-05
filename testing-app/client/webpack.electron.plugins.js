@@ -5,5 +5,6 @@ module.exports = [
   // new ForkTsCheckerWebpackPlugin(),
   new webpack.ExternalsPlugin('commonjs', [
     'electron'
-  ])
+  ]),
+  
 ];

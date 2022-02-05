@@ -3,16 +3,16 @@ module.exports = {
     {
       name: "@electron-forge/maker-zip",
     },
-    {
-      name: "@electron-forge/maker-deb",
-    },
-    {
-      name: "@electron-forge/maker-wix",
-      // config: {
-      //   language: 1033,
-      //   manufacturer: 'd58-lads'
-      // }
-    },
+    // {
+    //   name: "@electron-forge/maker-deb",
+    // },
+    // {
+    //   name: "@electron-forge/maker-wix",
+    //   // config: {
+    //   //   language: 1033,
+    //   //   manufacturer: 'd58-lads'
+    //   // }
+    // },
   ],
   plugins: [
     [
