@@ -1,11 +1,8 @@
 const rules = require("./webpack.electron.rules");
 const plugins = require("./webpack.electron.plugins");
 const path = require("path");
-const webpack = require("webpack");
 const CopyPlugin = require("copy-webpack-plugin");
 const RenameWebpackPlugin = require("rename-webpack-plugin");
-
-// console.log(process.env); // TODO: remove
 
 rules.push({
   test: /\.css$/,
@@ -18,15 +15,6 @@ module.exports = {
   },
   plugins: [
     ...plugins,
-    // new webpack.DefinePlugin({
-    //   // 'something.env.REACT_APP_REFERENCE_SERVER_URL': `'${process.env.REACT_APP_REFERENCE_SERVER_URL}'`,
-    //   // 'something.env.REACT_APP_IMPLEMENTED_SERVER_URL': `'${process.env.REACT_APP_IMPLEMENTED_SERVER_URL}'`,
-    //   "process.env.TEST": JSON.stringify("hello there"),
-    // }),
-    // new webpack.EnvironmentPlugin([
-    //   "REACT_APP_REFERENCE_SERVER_URL",
-    //   "REACT_APP_IMPLEMENTED_SERVER_URL",
-    // ]),
     new CopyPlugin({
       patterns: [
         {
