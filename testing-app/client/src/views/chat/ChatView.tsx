@@ -202,6 +202,9 @@ export const ChatView: FunctionComponent = () => {
         wsClient.removeAllListeners("message");
       } else {
         assert(is<WebsocketClientBrowser>(wsClient));
+        wsClient.onopen = null;
+        wsClient.onclose = null;
+        wsClient.onerror = null;
         wsClient.onmessage = null;
       }
     }
