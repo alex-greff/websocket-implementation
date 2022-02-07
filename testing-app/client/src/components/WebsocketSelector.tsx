@@ -52,7 +52,8 @@ export const WebsocketSelector: FunctionComponent<Props> = (props) => {
     isElectron() ? "implemented-client" : "reference-client"
   );
 
-  const [connected, setConnected] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
   const [wsClient, setWsClient] = useState<WebsocketClient | null>(null);
 
   const onServerChange = (value: string) => {
@@ -65,7 +66,8 @@ export const WebsocketSelector: FunctionComponent<Props> = (props) => {
 
   const onWsConnect = (ws: WebsocketClient) => {
     setWsClient(() => ws);
-    setConnected(() => true);
+    setIsConnected(() => true);
+    setIsConnecting(() => false);
     if (onConnect) onConnect(ws);
   };
 
@@ -73,7 +75,8 @@ export const WebsocketSelector: FunctionComponent<Props> = (props) => {
     // Only update state and do callback if the component is mounted
     if (isMounted()) {
       setWsClient(() => null);
-      setConnected(() => false);
+      setIsConnected(() => false);
+      setIsConnecting(() => false);
       if (onDisconnect) onDisconnect();
     }
   };
@@ -85,7 +88,9 @@ export const WebsocketSelector: FunctionComponent<Props> = (props) => {
         : Keys.REFERENCE_SERVER_URL;
 
     // Connect to new websocket client
-    if (!connected) {
+    if (!isConnected) {
+      setIsConnecting(() => true);
+
       // On Electron
       if (isElectron()) {
         const ws =
@@ -174,7 +179,7 @@ export const WebsocketSelector: FunctionComponent<Props> = (props) => {
           <FormLabel as="legend">Websocket Server</FormLabel>
           <RadioGroup
             value={selectedServer}
-            isDisabled={connected}
+            isDisabled={isConnected}
             onChange={onServerChange}
           >
             <HStack spacing="24px">
@@ -190,7 +195,7 @@ export const WebsocketSelector: FunctionComponent<Props> = (props) => {
           <FormLabel as="legend">Websocket Client</FormLabel>
           <RadioGroup
             value={selectedClient}
-            isDisabled={connected}
+            isDisabled={isConnected}
             onChange={onClientChange}
           >
             <HStack spacing="24px">
@@ -206,12 +211,13 @@ export const WebsocketSelector: FunctionComponent<Props> = (props) => {
       <Box height="2"></Box>
 
       <Button
-        colorScheme={connected ? "red" : "green"}
+        colorScheme={isConnected ? "red" : "green"}
         maxWidth="10rem"
         width="100%"
         type="submit"
+        isLoading={isConnecting}
       >
-        {connected ? "Disconnect" : "Connect"}
+        {isConnected ? "Disconnect" : "Connect"}
       </Button>
     </form>
   );
