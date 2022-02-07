@@ -1,5 +1,6 @@
 import React, {
   FunctionComponent,
+  useCallback,
   useMemo,
   useState,
 } from "react";
@@ -16,7 +17,12 @@ import {
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import { WebsocketSelector } from "@/components/WebsocketSelector";
-import { ChatMessage, WebsocketClient, WebsocketClientBrowser, WebsocketClientElectron } from "@/general-types";
+import {
+  ChatMessage,
+  WebsocketClient,
+  WebsocketClientBrowser,
+  WebsocketClientElectron,
+} from "@/general-types";
 import { assert, is } from "tsafe";
 import WebSocket from "ws";
 import { useMountedState } from "react-use";
@@ -157,15 +163,21 @@ export const ChatView: FunctionComponent = () => {
             wsClient.removeAllListeners("message");
           } else {
             assert(is<WebsocketClientBrowser>(wsClient));
-            wsClient.onmessage = null;
+            wsClient.addEventListener("message", onRoomMessageHandler);
           }
-          
         }
       }
     } catch (err) {
       console.error(err);
     }
   };
+
+  // Need to memoize this function using useCallback because WebAPI version of
+  // Websocket client does not allow for all listeners to be cleared
+  const onRoomMessageHandler = useCallback(
+    (e: MessageEvent<any>) => onRoomMessage(e.data),
+    []
+  );
 
   const roomJoin = () => {
     assert(wsClient !== null);
@@ -176,9 +188,8 @@ export const ChatView: FunctionComponent = () => {
       wsClient.on("message", onRoomMessage);
     } else {
       assert(is<WebsocketClientBrowser>(wsClient));
-      wsClient.addEventListener("message", (e) => onRoomMessage(e.data));
+      wsClient.addEventListener("message", onRoomMessageHandler);
     }
-    
 
     // Send the join room message
     const connectMessage = new WsRoomConnect(roomId, name);
@@ -202,7 +213,7 @@ export const ChatView: FunctionComponent = () => {
         wsClient.removeAllListeners("message");
       } else {
         assert(is<WebsocketClientBrowser>(wsClient));
-        wsClient.onmessage = null;
+        wsClient.removeEventListener("message", onRoomMessageHandler);
       }
     }
 
