@@ -65,7 +65,8 @@ export const ChatView: FunctionComponent = () => {
   const [name, setName] = useState<string>(DEFAULT_NAME);
   const isValidName = useMemo(() => name.length > 0, [name]);
 
-  const [isRoomConnected, setIsRoomConnected] = useState<boolean>(false);
+  const [isRoomConnecting, setIsRoomConnecting] = useState(false);
+  const [isRoomConnected, setIsRoomConnected] = useState(false);
 
   const [textMessageInput, setTextMessageInput] = useState<string>("");
   const isValidTextMessageInput = useMemo(
@@ -131,6 +132,7 @@ export const ChatView: FunctionComponent = () => {
         // Initialize members list for the currently joined users
         setMembers(() => [...roomConnectedMsg.members]);
 
+        setIsRoomConnecting(() => false);
         setIsRoomConnected(() => true);
       } else if (receivedMessage.type == "receive-message") {
         const receiveMessageMsg = WsReceiveMessage.fromJson(messageJson);
@@ -182,6 +184,8 @@ export const ChatView: FunctionComponent = () => {
   const roomJoin = () => {
     assert(wsClient !== null);
 
+    setIsRoomConnecting(() => true);
+
     // Setup message listener
     if (isElectron()) {
       assert(is<WebsocketClientElectron>(wsClient));
@@ -217,6 +221,7 @@ export const ChatView: FunctionComponent = () => {
       }
     }
 
+    setIsRoomConnecting(() => false);
     setIsRoomConnected(() => false);
     setMessages(() => []); // clear messages
     setMembers(() => []); // clear members
@@ -327,6 +332,7 @@ export const ChatView: FunctionComponent = () => {
           <Box height="2"></Box>
 
           <Button
+            isLoading={isRoomConnecting}
             colorScheme={isRoomConnected ? "red" : "blue"}
             type="submit"
             isDisabled={!isConnected || !isValidRoomId || !isValidName}
