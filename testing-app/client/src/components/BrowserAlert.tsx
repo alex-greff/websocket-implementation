@@ -28,7 +28,7 @@ export const BrowserAlert: FunctionComponent = (props) => {
       </AlertTitle>
       <AlertDescription maxWidth="md">
         <Text marginBottom="5">
-          Due to limitations in the browser preventing us from accessing the TLS
+          Due to limitations in the browser preventing us from accessing the TCP
           layer directly, the implemented Websocket client cannot be run on the
           browser. As such, only the Websocket client provided by the WebAPI is
           able to be used.
