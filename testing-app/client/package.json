@@ -19,9 +19,10 @@
     "start:prod-web": "cross-env SKIP_PREFLIGHT_CHECK=true PORT=3001 env-cmd -f .env.production craco start",
     "build:prod-desktop": "env-cmd -f .env.production electron-forge make",
     "build:prod-web": "cross-env SKIP_PREFLIGHT_CHECK=true env-cmd -f .env.production craco build",
-    "prepare-electron-downloads": "mkdir -p public/desktop-builds; cp out/make/zip/linux/x64/client-linux-x64-0.1.0.zip public/desktop-builds/demo-linux-x64.zip",
-    "link-and-build:prod-web": "npm run link:ws-client; cross-env SKIP_PREFLIGHT_CHECK=true env-cmd -f .env.production craco build",
-    "link:ws-client": "cd ../../websocket-client; npm i; npm run create:link; cd ../testing-app/client; npm link d58-websocket-client",
+    "prepare-electron-downloads:linux": "mkdir -p public/desktop-builds; cp out/make/zip/linux/x64/client-linux-x64-0.1.0.zip public/desktop-builds/demo-linux-x64.zip",
+    "prepare-electron-downloads:windows": "xcopy \"./out/make/zip/win32/x64/client-win32-x64-0.1.0.zip\" \"./public/desktop-builds/demo-windows-x64.zip*\" /F /R /Y /I",
+    "link-and-build:prod-web": "npm run link:ws-client && cross-env SKIP_PREFLIGHT_CHECK=true env-cmd -f .env.production craco build",
+    "link:ws-client": "cd ../../websocket-client && npm i && npm run create:link && cd ../testing-app/client && npm link d58-websocket-client",
     "eject": "craco eject"
   },
   "dependencies": {
