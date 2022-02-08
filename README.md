@@ -1,6 +1,7 @@
-# cscd58-project
+# Websocket Implementation
 
-Project for CSCD58 (WebSocket client and server)
+Implementation of a spec-compliant Websocket server and client. Originally done 
+as a project for my CSCD58: Computer Networks class.
 
 **Members:**
  
@@ -8,47 +9,24 @@ Project for CSCD58 (WebSocket client and server)
 * Chedy Sankar
 * Alex Greff
 
-## Testing App
+# Project Structure
 
-For this project, we setup a simple chat room app that allows us to demonstrate
-the functionality of our Websocket client and server implementations. The app
-consists of two Websocket servers, one uses our implemented Websocket server
-while the other one uses the `ws` npm package. These servers are connected to
-a client that uses Electron which gives a nice interface for interacting with
-the chat room.
+The repository is composed into three sections:
 
-To run the testing app we must do the following:
+1. The Websocket server (`websocket-server`)
+2. The Websocket client (`websocket-client`)
+3. The testing chat application (`testing-app`)
 
-First, start up our Websocket chat sever:
-
-```bash
-cd server
-python3 chat_server.py
-```
-
-In a new terminal, start up the reference Websocket chat server:
-
-```bash
-cd server-reference
-npm install
-npm run start:dev
-```
-
-Next, link our Websocket client implementation so that our Electron client can
-use it:
-
-```bash
-cd ../websocket-client
-npm run create:link
-```
-
-Finally, in one more terminal start up the Electron app client:
-
-```bash
-cd client
-npm install
-npm link:ws-client
-npm run start:dev
-# or start `num` windows (between 2 and 4, inclusive)
-npm run start:dev-[num]
-```
+The Websocket server is implemented in Python3 with no external dependencies.
+The Websocket client is implemented as a Node.js package. The testing app has
+three main parts to it. The first part is a reference Websocket server
+(`testing-app/server-reference`) using Node.js and the `ws` Websocket package
+which implements a version of the chat application used as a reference point to
+demonstrate the interoperability of the Websocket client with production-ready
+Websocket libraries. The chat application is also rewritten in Python and uses
+our implemented Websocket server (`testing-app/server`). Finally, the client
+is a cross-platform web app written in React and Typescript. Unfortunately due
+to limitations in the WebAPI (specifically no access to lower-level networking
+protocols such as TCP), our implemented Websocket client cannot run on the
+browser. As such, it is loaded into an Electron app while the web build only
+allows for the WebAPI Websocket client to be used.
