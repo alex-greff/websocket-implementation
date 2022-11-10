@@ -1,4 +1,4 @@
-# Note: make sure this is run at the root of the project
+# Note: make sure this context is run at the root of the project
 FROM python:3.8-alpine
 WORKDIR /app
 RUN mkdir -p ./dist
